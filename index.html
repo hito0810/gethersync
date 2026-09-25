@@ -762,6 +762,152 @@ body {
   gap: 10px;
 }
 
+/* --- シフトボード風フォームスタイル --- */
+.shift-modal-box {
+  background: var(--bg-primary) !important;
+  border: none !important;
+  border-radius: 24px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  max-width: 480px !important;
+}
+.shift-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.shift-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(88vh - 60px);
+  overflow-y: auto;
+}
+.shift-card-section {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+.shift-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.shift-title-input {
+  width: 100%;
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+}
+.shift-title-input:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+}
+.shift-category-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0 2px 0;
+  scrollbar-width: none;
+}
+.shift-category-chips::-webkit-scrollbar { display: none; }
+.shift-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+  color: var(--text-primary);
+}
+.shift-chip.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+.shift-form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.shift-form-row:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+.shift-row-label {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+.shift-row-input {
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  text-align: right;
+}
+.shift-row-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.shift-quick-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.shift-quick-btn {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+.shift-quick-btn:hover, .shift-quick-btn:active {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 .toast-container {
   position: fixed;
   bottom: 85px;
@@ -969,62 +1115,82 @@ body {
 
   <!-- MODALS -->
   <div id="modal-new-event" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 class="modal-title">✨ 新しい予定を作成する</h3>
-        <button class="btn-icon" onclick="window.App.closeModal('modal-new-event')">✕</button>
+    <div class="modal-box shift-modal-box">
+      <div class="shift-modal-header">
+        <button type="button" style="color: var(--text-secondary); font-size: 14px; font-weight: 600; border: none; background: none; cursor: pointer;" onclick="window.App.closeModal('modal-new-event')">キャンセル</button>
+        <h3 class="modal-title" style="font-size: 16px;">✨ 予定の作成</h3>
+        <button type="button" style="color: var(--primary); font-size: 14px; font-weight: 800; border: none; background: none; cursor: pointer;" onclick="document.getElementById('btn-submit-new-event').click()">作成</button>
       </div>
-      <form id="form-new-event" onsubmit="window.App.handleCreateEvent(event)">
-        <div class="form-group">
-          <label class="form-label" for="event-title">予定のタイトル *</label>
-          <input type="text" id="event-title" class="form-input" placeholder="例: 週末BBQキャンプ、同期飲み会" required>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="event-category">カテゴリ</label>
-            <select id="event-category" class="form-select">
-              <option value="drink">🍻 飲み会・食事</option>
-              <option value="camp">⛺ アウトドア・旅行</option>
-              <option value="sports">⚽ スポーツ・運動</option>
-              <option value="study">💻 勉強・ワーク</option>
-              <option value="other">🎉 その他イベント</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="event-group-select">招待するグループ</label>
-            <select id="event-group-select" class="form-select"></select>
+
+      <form id="form-new-event" onsubmit="window.App.handleCreateEvent(event)" class="shift-modal-body">
+        <!-- 1. タイトル & カテゴリ -->
+        <div class="shift-card-section">
+          <input type="text" id="event-title" class="shift-title-input" placeholder="予定のタイトルを入力 *" required>
+          
+          <div style="margin-top: 10px;">
+            <div class="shift-section-title"><span>🏷️</span> カテゴリ</div>
+            <input type="hidden" id="event-category" value="drink">
+            <div class="shift-category-chips">
+              <div class="shift-chip active" data-cat="drink" onclick="window.App.selectCategoryChip('drink')">🍻 飲み会</div>
+              <div class="shift-chip" data-cat="camp" onclick="window.App.selectCategoryChip('camp')">⛺ アウトドア</div>
+              <div class="shift-chip" data-cat="sports" onclick="window.App.selectCategoryChip('sports')">⚽ スポーツ</div>
+              <div class="shift-chip" data-cat="study" onclick="window.App.selectCategoryChip('study')">💻 勉強</div>
+              <div class="shift-chip" data-cat="other" onclick="window.App.selectCategoryChip('other')">🎉 イベント</div>
+            </div>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="event-location">開催場所（店名・住所）</label>
-          <input type="text" id="event-location" class="form-input" placeholder="例: 新宿 魚金、奥多摩リバーサイド">
-        </div>
-        <div class="form-group" style="background: rgba(99, 102, 241, 0.08); padding: 12px; border-radius: var(--radius-md); border: 1px solid rgba(99, 102, 241, 0.25);">
-          <label class="form-label" for="event-passcode" style="color: var(--primary);">🔐 イベント参加合言葉（任意）</label>
-          <input type="password" id="event-passcode" class="form-input" placeholder="合言葉を設定（知っている人のみ参加可能）">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="event-start">開始日時 *</label>
-            <input type="datetime-local" id="event-start" class="form-input" required>
+
+        <!-- 2. 日時設定 -->
+        <div class="shift-card-section">
+          <div class="shift-section-title"><span>📅</span> 開催日時</div>
+          <div class="shift-form-row">
+            <span class="shift-row-label">開始</span>
+            <input type="datetime-local" id="event-start" class="shift-row-input" required onchange="window.App.handleStartTimeChange()">
           </div>
-          <div class="form-group">
-            <label class="form-label" for="event-end">終了日時</label>
-            <input type="datetime-local" id="event-end" class="form-input">
+          <div class="shift-form-row">
+            <span class="shift-row-label">終了</span>
+            <input type="datetime-local" id="event-end" class="shift-row-input">
           </div>
         </div>
-        <div class="form-group" style="background: rgba(245, 158, 11, 0.08); padding: 12px; border-radius: var(--radius-md); border: 1px dashed rgba(245, 158, 11, 0.4);">
-          <label class="form-label" for="event-deadline" style="color: #f59e0b;">⏰ 回答の締め切り日時 *</label>
-          <input type="datetime-local" id="event-deadline" class="form-input" required>
+
+        <!-- 3. 回答締切設定 -->
+        <div class="shift-card-section" style="border-left: 4px solid #f59e0b;">
+          <div class="shift-section-title" style="color: #f59e0b;"><span>⏰</span> 出欠の回答締切</div>
+          <div class="shift-form-row" style="border-bottom: none;">
+            <span class="shift-row-label">締切日時</span>
+            <input type="datetime-local" id="event-deadline" class="shift-row-input" required>
+          </div>
+          <div class="shift-quick-chips">
+            <button type="button" class="shift-quick-btn" onclick="window.App.setQuickDeadline('day-before-noon')">前日 12:00</button>
+            <button type="button" class="shift-quick-btn" onclick="window.App.setQuickDeadline('2days-before')">2日前 12:00</button>
+            <button type="button" class="shift-quick-btn" onclick="window.App.setQuickDeadline('day-of-noon')">当日 12:00</button>
+            <button type="button" class="shift-quick-btn" onclick="window.App.setQuickDeadline('3hours-before')">開始3時間前</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="event-desc">詳細・持ち物・会費メモ</label>
-          <textarea id="event-desc" class="form-textarea" rows="3" placeholder="例: 会費4,000円、雨天時は延期"></textarea>
+
+        <!-- 4. 招待グループ・場所・詳細 -->
+        <div class="shift-card-section">
+          <div class="shift-section-title"><span>👥</span> 招待と詳細情報</div>
+          
+          <div class="shift-form-row">
+            <span class="shift-row-label">グループ</span>
+            <select id="event-group-select" class="shift-row-input" style="max-width: 60%;"></select>
+          </div>
+
+          <div class="shift-form-row">
+            <span class="shift-row-label">📍 場所</span>
+            <input type="text" id="event-location" class="shift-row-input" placeholder="店名・住所（任意）" style="width: 60%;">
+          </div>
+
+          <div style="margin-top: 10px;">
+            <span class="shift-row-label" style="font-size: 12px; margin-bottom: 4px;">📝 メモ・会費など</span>
+            <textarea id="event-desc" class="form-textarea" rows="2" placeholder="例: 会費4,000円、遅刻OK" style="font-size: 13px;"></textarea>
+          </div>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button type="button" class="btn btn-secondary" onclick="window.App.closeModal('modal-new-event')">キャンセル</button>
-          <button type="submit" class="btn btn-primary">予定を作成して招待</button>
-        </div>
+
+        <button type="submit" id="btn-submit-new-event" class="btn btn-primary btn-full" style="padding: 14px; font-size: 15px; font-weight: 800; border-radius: 14px; margin-top: 4px; box-shadow: 0 4px 14px rgba(6, 199, 85, 0.3);">
+          ✨ この内容で予定を作成して招待
+        </button>
       </form>
     </div>
   </div>
@@ -2852,18 +3018,80 @@ body {
       openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
       closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); }
 
-      // --- 予定作成モーダル ---
+      // --- シフトボード風 予定作成ヘルパー ---
+      selectCategoryChip(cat) {
+        const catInput = document.getElementById('event-category');
+        if (catInput) catInput.value = cat;
+        document.querySelectorAll('.shift-category-chips .shift-chip').forEach(chip => {
+          chip.classList.toggle('active', chip.dataset.cat === cat);
+        });
+      },
+
+      handleStartTimeChange() {
+        const startInput = document.getElementById('event-start');
+        const endInput = document.getElementById('event-end');
+        const deadlineInput = document.getElementById('event-deadline');
+        if (!startInput || !startInput.value) return;
+
+        const startDate = new Date(startInput.value);
+        if (isNaN(startDate.getTime())) return;
+
+        const endDate = new Date(startDate.getTime() + (2 * 60 * 60 * 1000));
+        if (endInput) endInput.value = this.formatDateForInput(endDate);
+
+        const deadlineDate = new Date(startDate.getTime() - (24 * 60 * 60 * 1000));
+        deadlineDate.setHours(12, 0, 0, 0);
+        if (deadlineInput) deadlineInput.value = this.formatDateForInput(deadlineDate);
+      },
+
+      setQuickDeadline(type) {
+        const startInput = document.getElementById('event-start');
+        const deadlineInput = document.getElementById('event-deadline');
+        if (!deadlineInput) return;
+
+        let baseDate = startInput && startInput.value ? new Date(startInput.value) : new Date(Date.now() + 86400000);
+        if (isNaN(baseDate.getTime())) baseDate = new Date(Date.now() + 86400000);
+
+        const target = new Date(baseDate);
+        if (type === 'day-before-noon') {
+          target.setDate(target.getDate() - 1);
+          target.setHours(12, 0, 0, 0);
+        } else if (type === '2days-before') {
+          target.setDate(target.getDate() - 2);
+          target.setHours(12, 0, 0, 0);
+        } else if (type === 'day-of-noon') {
+          target.setHours(12, 0, 0, 0);
+        } else if (type === '3hours-before') {
+          target.setTime(target.getTime() - (3 * 60 * 60 * 1000));
+        }
+
+        deadlineInput.value = this.formatDateForInput(target);
+        this.showToast(`⏰ 締切を「${UI.formatDateTime(target.toISOString())}」に設定しました`);
+      },
+
+      formatDateForInput(date) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      },
+
       openNewEventModal(gid) {
         const groupSelect = document.getElementById('event-group-select');
         const groups = StorageManager.getGroups();
         if (groupSelect) {
           groupSelect.innerHTML = '<option value="">（全体公開 / 全ての友達）</option>' + groups.map(g => `<option value="${g.id}" ${gid === g.id ? 'selected' : ''}>${g.icon} ${g.name}</option>`).join('');
         }
+
+        this.selectCategoryChip('drink');
+
         const tomorrow = new Date(Date.now() + 86400000);
-        const startStr = tomorrow.toISOString().slice(0, 10) + 'T19:00';
-        document.getElementById('event-start').value = startStr;
-        document.getElementById('event-end').value = tomorrow.toISOString().slice(0, 10) + 'T21:00';
-        document.getElementById('event-deadline').value = tomorrow.toISOString().slice(0, 10) + 'T12:00';
+        tomorrow.setHours(19, 0, 0, 0);
+        const endTomorrow = new Date(tomorrow.getTime() + (2 * 60 * 60 * 1000));
+        const deadlineDate = new Date(tomorrow.getTime() - (24 * 60 * 60 * 1000));
+        deadlineDate.setHours(12, 0, 0, 0);
+
+        document.getElementById('event-start').value = this.formatDateForInput(tomorrow);
+        document.getElementById('event-end').value = this.formatDateForInput(endTomorrow);
+        document.getElementById('event-deadline').value = this.formatDateForInput(deadlineDate);
         this.openModal('modal-new-event');
       }
 
