@@ -1,36 +1,25 @@
-const CACHE_NAME = 'gathersync-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './css/style.css',
-  './js/app.js',
-  './js/models.js',
-  './js/calendar.js',
-  './manifest.json'
-];
+const CACHE_NAME = 'gathersync-v2-' + Date.now();
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      );
+      return Promise.all(keys.map((key) => caches.delete(key)));
     }).then(() => self.clients.claim())
   );
 });
 
+// ネットワーク優先 (Network First): 常に最新のサーバーコードを取得し、ネットがない時だけキャッシュを使用
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => caches.match('./index.html'));
+    fetch(event.request).then((response) => {
+      return response;
+    }).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
