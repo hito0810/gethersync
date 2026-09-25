@@ -960,17 +960,32 @@ body {
       <div class="section-header">
         <div>
           <h2 class="section-title">👤 友達一覧 & 招待</h2>
-          <p style="font-size: 13px; color: var(--text-secondary);">招待URLやLINEで友達を何人でも招待できます</p>
+          <p style="font-size: 13px; color: var(--text-secondary);">招待リンクやアカウントIDで友達と繋がれます</p>
         </div>
         <div style="display: flex; gap: 8px;">
           <button class="btn btn-primary" onclick="window.App.openFriendInviteModal()">
-            🔗 招待URLを発行
+            🔗 招待リンク
           </button>
           <button class="btn btn-secondary" onclick="window.App.openAddFriendModal()">
-            ＋ 手動追加
+            ＋ 友達を追加
           </button>
         </div>
       </div>
+
+      <!-- あなたのアカウントIDバナー（ワンタップコピー） -->
+      <div style="background: var(--bg-card); border-radius: var(--radius-md); padding: 12px 16px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <span style="font-size: 22px;">🔑</span>
+          <div style="min-width: 0;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary);">あなたのアカウントID</div>
+            <div id="my-account-id-badge" style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">usr_...</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 4px;" onclick="window.App.copyMyUserId()">
+          📋 IDをコピー
+        </button>
+      </div>
+
       <div id="friend-list-container" style="margin-top: 16px;"></div>
     </section>
   </div>
@@ -1148,37 +1163,72 @@ body {
   <div id="modal-add-friend" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title">👤 友達を追加する</h3>
+        <h3 class="modal-title">👤 友達を追加</h3>
         <button class="btn-icon" onclick="window.App.closeModal('modal-add-friend')">✕</button>
       </div>
-      <form id="form-add-friend" onsubmit="window.App.handleAddFriend(event)">
-        <div class="form-group">
-          <label class="form-label" for="friend-name">友達の名前 *</label>
-          <input type="text" id="friend-name" class="form-input" placeholder="例: 佐藤 健太" required>
+
+      <!-- モード切り替えタブ -->
+      <div style="display: flex; gap: 6px; margin-bottom: 16px; background: var(--bg-tertiary); padding: 4px; border-radius: var(--radius-md);">
+        <button type="button" id="tab-friend-search-btn" class="btn btn-sm btn-primary" style="flex: 1;" onclick="window.App.switchAddFriendTab('search')">🔍 IDで検索して追加</button>
+        <button type="button" id="tab-friend-manual-btn" class="btn btn-sm btn-secondary" style="flex: 1;" onclick="window.App.switchAddFriendTab('manual')">✍️ 手動で名前入力</button>
+      </div>
+
+      <!-- モード1: アカウントIDで探す -->
+      <div id="section-friend-search">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+          友達から教えてもらったアカウントID（<code>usr_...</code>）を入力して検索してください。
+        </p>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <input type="text" id="friend-search-id-input" class="form-input" placeholder="例: usr_abc1234_xyz" style="font-family: monospace; font-size: 13px;" onkeypress="if(event.key==='Enter'){event.preventDefault();window.App.searchFriendById();}">
+          <button type="button" class="btn btn-primary" style="white-space: nowrap; flex-shrink: 0;" onclick="window.App.searchFriendById()">🔍 検索</button>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="friend-avatar">アバター絵文字</label>
-            <select id="friend-avatar" class="form-select">
-              <option value="😊">😊 ニコニコ</option>
-              <option value="🦁">🦁 ライオン</option>
-              <option value="🐱">🐱 ネコ</option>
-              <option value="🐼">🐼 パンダ</option>
-              <option value="🐰">🐰 ウサギ</option>
-              <option value="🐻">🐻 クマ</option>
-              <option value="🦊">🦊 キツネ</option>
-            </select>
+
+        <!-- 検索結果カード -->
+        <div id="friend-search-result" style="display: none; padding: 14px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div id="friend-search-avatar" style="font-size: 32px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); border-radius: 50%; box-shadow: var(--shadow-sm); flex-shrink: 0;">😊</div>
+            <div style="flex: 1; min-width: 0;">
+              <div id="friend-search-name" style="font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">友達の名前</div>
+              <div id="friend-search-id-display" style="font-size: 11px; font-family: monospace; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">usr_xxxx</div>
+            </div>
           </div>
+          <button type="button" class="btn btn-success btn-full" onclick="window.App.addSearchedFriend()">🤝 友達に追加する</button>
+        </div>
+
+        <div id="friend-search-status" style="font-size: 13px; text-align: center; color: var(--text-secondary); padding: 4px 0;"></div>
+      </div>
+
+      <!-- モード2: 手動入力 -->
+      <div id="section-friend-manual" style="display: none;">
+        <form id="form-add-friend" onsubmit="window.App.handleAddFriend(event)">
           <div class="form-group">
-            <label class="form-label" for="friend-note">メモ</label>
-            <input type="text" id="friend-note" class="form-input" placeholder="例: 高校の同期">
+            <label class="form-label" for="friend-name">友達の名前 *</label>
+            <input type="text" id="friend-name" class="form-input" placeholder="例: 佐藤 健太" required>
           </div>
-        </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button type="button" class="btn btn-secondary" onclick="window.App.closeModal('modal-add-friend')">キャンセル</button>
-          <button type="submit" class="btn btn-primary">友達を追加</button>
-        </div>
-      </form>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="friend-avatar">アバター絵文字</label>
+              <select id="friend-avatar" class="form-select">
+                <option value="😊">😊 ニコニコ</option>
+                <option value="🦁">🦁 ライオン</option>
+                <option value="🐱">🐱 ネコ</option>
+                <option value="🐼">🐼 パンダ</option>
+                <option value="🐰">🐰 ウサギ</option>
+                <option value="🐻">🐻 クマ</option>
+                <option value="🦊">🦊 キツネ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="friend-note">メモ</label>
+              <input type="text" id="friend-note" class="form-input" placeholder="例: 高校の同期">
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary" onclick="window.App.closeModal('modal-add-friend')">キャンセル</button>
+            <button type="submit" class="btn btn-primary">友達を追加</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -1349,16 +1399,20 @@ body {
         <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-color);">
           <div style="font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
             <span>🔑 あなたのアカウントID</span>
-            <span id="profile-user-id" style="font-size: 11px; font-family: monospace; background: var(--bg-primary); padding: 2px 6px; border-radius: 4px; color: var(--accent);"></span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span id="profile-user-id" style="font-size: 12px; font-family: monospace; background: var(--bg-primary); padding: 3px 8px; border-radius: 6px; color: var(--accent); font-weight: 700;"></span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" onclick="window.App.copyMyUserId()">📋 コピー</button>
+            </div>
           </div>
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
-            開いた瞬間に自動読み取り＆自動ログインされます。他端末（PCや別スマホ）にログインしたい場合は下のURLを開くだけでOKです。
+            友達にこのIDを伝えると「🔍 IDで検索して追加」からあなたを友達に追加できます。
           </p>
-          <input type="text" id="profile-autologin-url" class="form-input" readonly style="font-size: 11px; margin-bottom: 8px; text-align: center;" onclick="window.App.copyAutoLoginUrl()">
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="window.App.copyAutoLoginUrl()">📱 自動ログインURLをコピー</button>
-            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="window.App.handleSwitchAccount()">🔄 IDでログイン</button>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button type="button" class="btn btn-primary btn-sm" style="flex: 1;" onclick="window.App.copyMyUserId()">📋 アカウントIDをコピー</button>
+            <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="window.App.copyAutoLoginUrl()">📱 ログインURLをコピー</button>
           </div>
+          <input type="text" id="profile-autologin-url" class="form-input" readonly style="font-size: 11px; margin-bottom: 8px; text-align: center; display: none;">
+          <button type="button" class="btn btn-secondary btn-sm btn-full" onclick="window.App.handleSwitchAccount()">🔄 別のアカウントIDでログイン</button>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
@@ -2770,14 +2824,23 @@ body {
       // --- 友達一覧 ---
       renderFriends() {
         const container = document.getElementById('friend-list-container');
+        const badge = document.getElementById('my-account-id-badge');
+        const me = StorageManager.getCurrentUser();
+        if (badge && me) {
+          badge.textContent = me.id || 'usr_...';
+        }
+
         if (!container) return;
         const friends = StorageManager.getFriends();
         if (friends.length === 0) {
           container.innerHTML = `
             <div style="text-align: center; padding: 30px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
               <div style="font-size: 32px; margin-bottom: 6px;">👤</div>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">友達がまだ登録されていません。「🔗 招待URLを発行」から友達にリンクを送りましょう！</p>
-              <button class="btn btn-primary btn-sm" onclick="window.App.openFriendInviteModal()">🔗 招待URLを発行する</button>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">友達がまだ登録されていません。「＋ 友達を追加」からID検索するか、「🔗 招待リンク」を友達に送りましょう！</p>
+              <div style="display:flex; justify-content:center; gap:8px;">
+                <button class="btn btn-primary btn-sm" onclick="window.App.openAddFriendModal()">＋ 友達を追加する</button>
+                <button class="btn btn-secondary btn-sm" onclick="window.App.openFriendInviteModal()">🔗 招待リンクを発行</button>
+              </div>
             </div>
           `;
           return;
@@ -2786,9 +2849,10 @@ body {
           <div class="friend-item">
             <div class="friend-info">
               <div class="friend-avatar-circle" style="overflow: hidden;">${UI.renderAvatarHtml(f.avatar || '😊', 38)}</div>
-              <div>
-                <div style="font-weight: 700;">${sanitize(f.name)}</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">${sanitize(f.note || '同期・友達')}</div>
+              <div style="min-width:0;">
+                <div style="font-weight: 700; font-size: 14px;">${sanitize(f.name)}</div>
+                <div style="font-size: 11px; font-family: monospace; color: var(--text-secondary); margin-top: 1px;">ID: ${sanitize(f.id)}</div>
+                ${f.note ? `<div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${sanitize(f.note)}</div>` : ''}
               </div>
             </div>
             <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3); padding: 4px 10px;" onclick="window.App.handleDeleteFriend('${f.id}', '${sanitize(f.name)}')">
@@ -3006,7 +3070,149 @@ body {
         }
       }
 
-      openAddFriendModal() { this.openModal('modal-add-friend'); }
+      copyMyUserId() {
+        const me = StorageManager.getCurrentUser();
+        if (!me || !me.id) return;
+        const textToCopy = me.id;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            this.showToast(`📋 アカウントID「${textToCopy}」をコピーしました！`);
+          }).catch(() => {
+            this.showToast(`📋 アカウントID「${textToCopy}」をコピーしました！`);
+          });
+        } else {
+          this.showToast(`📋 アカウントID「${textToCopy}」をコピーしました！`);
+        }
+      },
+
+      switchAddFriendTab(tab) {
+        const searchBtn = document.getElementById('tab-friend-search-btn');
+        const manualBtn = document.getElementById('tab-friend-manual-btn');
+        const searchSec = document.getElementById('section-friend-search');
+        const manualSec = document.getElementById('section-friend-manual');
+        if (!searchBtn || !manualBtn || !searchSec || !manualSec) return;
+
+        if (tab === 'search') {
+          searchBtn.className = 'btn btn-sm btn-primary';
+          manualBtn.className = 'btn btn-sm btn-secondary';
+          searchSec.style.display = 'block';
+          manualSec.style.display = 'none';
+        } else {
+          searchBtn.className = 'btn btn-sm btn-secondary';
+          manualBtn.className = 'btn btn-sm btn-primary';
+          searchSec.style.display = 'none';
+          manualSec.style.display = 'block';
+        }
+      },
+
+      openAddFriendModal() {
+        this.switchAddFriendTab('search');
+        const searchInput = document.getElementById('friend-search-id-input');
+        if (searchInput) searchInput.value = '';
+        const resultCard = document.getElementById('friend-search-result');
+        if (resultCard) resultCard.style.display = 'none';
+        const statusEl = document.getElementById('friend-search-status');
+        if (statusEl) statusEl.innerHTML = '';
+        this.searchedFriendData = null;
+        this.openModal('modal-add-friend');
+      },
+
+      async searchFriendById() {
+        const input = document.getElementById('friend-search-id-input');
+        const statusEl = document.getElementById('friend-search-status');
+        const resultCard = document.getElementById('friend-search-result');
+        if (!input || !statusEl || !resultCard) return;
+
+        const query = input.value.trim();
+        if (!query) {
+          statusEl.innerHTML = '<span style="color:var(--danger); font-weight:700;">⚠️ アカウントIDを入力してください</span>';
+          resultCard.style.display = 'none';
+          return;
+        }
+
+        const me = StorageManager.getCurrentUser();
+        if (query === me.id) {
+          statusEl.innerHTML = '<span style="color:var(--warning); font-weight:700;">ℹ️ あなた自身のアカウントIDです</span>';
+          resultCard.style.display = 'none';
+          return;
+        }
+
+        const friends = StorageManager.getFriends();
+        const alreadyFriend = friends.find(f => f.id === query);
+        if (alreadyFriend) {
+          statusEl.innerHTML = `<span style="color:var(--success); font-weight:700;">🤝 「${sanitize(alreadyFriend.name)}」さんは既に友達登録されています</span>`;
+          resultCard.style.display = 'none';
+          return;
+        }
+
+        statusEl.innerHTML = '<span>🔍 アカウントを照会中...</span>';
+        resultCard.style.display = 'none';
+
+        // 1. サーバーAPIからユーザー情報を検索
+        let foundUser = null;
+        try {
+          const res = await ServerApi.lookupUser(query);
+          if (res && res.user) {
+            foundUser = res.user;
+          }
+        } catch(e) {}
+
+        // 2. サーバーから見つかった場合
+        if (foundUser) {
+          this.searchedFriendData = {
+            id: foundUser.id || query,
+            name: foundUser.name || '友達',
+            avatar: foundUser.avatar || '😊'
+          };
+          document.getElementById('friend-search-name').textContent = this.searchedFriendData.name;
+          document.getElementById('friend-search-id-display').textContent = this.searchedFriendData.id;
+          document.getElementById('friend-search-avatar').innerHTML = UI.renderAvatarHtml(this.searchedFriendData.avatar, 44);
+          resultCard.style.display = 'block';
+          statusEl.innerHTML = '<span style="color:var(--success); font-weight:700;">✨ ユーザーが見つかりました！</span>';
+          return;
+        }
+
+        // 3. 静的サーバーやオフライン時でもID指定で追加可能にする親切対応
+        if (query.startsWith('usr_') || query.startsWith('u_')) {
+          this.searchedFriendData = {
+            id: query,
+            name: '友達 (' + query.slice(-5) + ')',
+            avatar: '😊'
+          };
+          document.getElementById('friend-search-name').textContent = this.searchedFriendData.name;
+          document.getElementById('friend-search-id-display').textContent = this.searchedFriendData.id;
+          document.getElementById('friend-search-avatar').innerHTML = UI.renderAvatarHtml(this.searchedFriendData.avatar, 44);
+          resultCard.style.display = 'block';
+          statusEl.innerHTML = '<span style="color:var(--accent); font-weight:700;">ℹ️ アカウントIDを確認しました。「友達に追加」を押してください</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color:var(--danger); font-weight:700;">❌ 正しいアカウントID（usr_...）を入力してください</span>';
+          resultCard.style.display = 'none';
+        }
+      },
+
+      addSearchedFriend() {
+        if (!this.searchedFriendData) return;
+        const target = this.searchedFriendData;
+        const me = StorageManager.getCurrentUser();
+
+        StorageManager.addFriend({
+          id: target.id,
+          name: target.name,
+          avatar: target.avatar,
+          note: 'ID検索から追加'
+        });
+
+        StorageManager.addNotification({
+          title: `🤝 ${target.name} さんと友達になりました！`,
+          message: `予定を作成してグループに誘ってみましょう。`
+        });
+
+        this.closeModal('modal-add-friend');
+        this.showToast(`🎉 ${target.name} さんを友達に追加しました！`);
+        this.renderFriends();
+        this.pullFromServer(true);
+      },
+
       handleAddFriend(e) {
         e.preventDefault();
         const name = document.getElementById('friend-name').value.trim();

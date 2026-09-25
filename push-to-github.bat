@@ -6,11 +6,12 @@ echo ===================================================
 echo.
 set "GIT_EXE=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\Git\cmd\git.exe"
 
-set /p REPO_URL="Enter GitHub Repository URL: "
+set "DEFAULT_URL=https://github.com/hito0810/gethersync.git"
+echo Default URL: %DEFAULT_URL%
+set /p REPO_URL="Enter GitHub Repository URL [Press Enter for default]: "
 
 if "%REPO_URL%"=="" (
-    echo [ERROR] URL was empty.
-    goto END
+    set "REPO_URL=%DEFAULT_URL%"
 )
 
 echo.
