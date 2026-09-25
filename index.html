@@ -1612,15 +1612,17 @@ body {
     const StorageManager = {
       init() {
         const params = new URLSearchParams(window.location.search);
-        const loginParam = params.get('login') || params.get('uid');
+        const restoreKey = params.get('restoreKey') || params.get('secret');
+        const loginUid = params.get('uid') || params.get('login');
         
         let user = null;
 
-        // 1. URLパラメータにログインID指定がある場合
-        if (loginParam && loginParam.startsWith('usr_')) {
-          user = { id: loginParam, name: 'あなた', avatar: '🦊' };
+        // 1. 🔒 正当な復元キー（secretKey）がある場合のみアカウント復元を許可
+        if (restoreKey && loginUid && loginUid.startsWith('usr_')) {
+          user = { id: loginUid, secretKey: restoreKey, name: 'あなた', avatar: '🦊' };
           SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
           CookieManager.set('gathersync_user_id', user.id);
+          CookieManager.set('gathersync_secret_key', restoreKey);
         }
 
         // 2. LocalStorage から既存ユーザーを取得
@@ -1630,6 +1632,10 @@ body {
             try {
               const parsed = JSON.parse(userStr);
               if (parsed && parsed.id && parsed.id !== 'user_me') {
+                if (!parsed.secretKey) {
+                  parsed.secretKey = generateUniqueUserId('sec');
+                  SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(parsed));
+                }
                 user = parsed;
               }
             } catch(e) {}
@@ -1642,15 +1648,17 @@ body {
           if (cookieUid && cookieUid.startsWith('usr_')) {
             const cookieName = CookieManager.get('gathersync_user_name') || 'あなた';
             const cookieAvatar = CookieManager.get('gathersync_user_avatar') || '🦊';
-            user = { id: cookieUid, name: cookieName, avatar: cookieAvatar };
+            const cookieSecret = CookieManager.get('gathersync_secret_key') || generateUniqueUserId('sec');
+            user = { id: cookieUid, secretKey: cookieSecret, name: cookieName, avatar: cookieAvatar };
             SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
           }
         }
 
-        // 4. 初回アクセス等でIDが存在しない場合のみ新規IDを発行
+        // 4. 初回アクセス等でIDが存在しない場合のみ新規IDと秘密鍵を発行
         if (!user || !user.id || user.id === 'user_me') {
           user = {
             id: generateUniqueUserId('usr'),
+            secretKey: generateUniqueUserId('sec'),
             name: (user && user.name && user.name !== '自分 (あなた)') ? user.name : 'あなた',
             avatar: (user && user.avatar) ? user.avatar : '🦊'
           };
@@ -1659,6 +1667,7 @@ body {
 
         // Cookie を最新情報で常時同期
         CookieManager.set('gathersync_user_id', user.id);
+        CookieManager.set('gathersync_secret_key', user.secretKey || '');
         CookieManager.set('gathersync_user_name', user.name);
         CookieManager.set('gathersync_user_avatar', user.avatar);
 
@@ -1674,15 +1683,24 @@ body {
       getCurrentUser() {
         try {
           const u = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.CURRENT_USER));
-          if (u && u.id && u.id !== 'user_me') return u;
+          if (u && u.id && u.id !== 'user_me') {
+            if (!u.secretKey) {
+              u.secretKey = generateUniqueUserId('sec');
+              SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(u));
+            }
+            return u;
+          }
         } catch(e) {}
-        const newU = { id: generateUniqueUserId('usr'), name: 'あなた', avatar: '🦊' };
+        const newU = { id: generateUniqueUserId('usr'), secretKey: generateUniqueUserId('sec'), name: 'あなた', avatar: '🦊' };
         SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newU));
         return newU;
       },
 
       saveCurrentUser(user) {
+        if (!user.secretKey) user.secretKey = generateUniqueUserId('sec');
         SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+        CookieManager.set('gathersync_user_id', user.id);
+        CookieManager.set('gathersync_secret_key', user.secretKey);
         CookieManager.set('gathersync_user_name', user.name);
         CookieManager.set('gathersync_user_avatar', user.avatar);
         this.pushAllToServer();
@@ -2476,7 +2494,7 @@ body {
 
         const uidElem = document.getElementById('profile-user-id');
         if (uidElem) uidElem.textContent = user.id;
-        const autoLoginUrl = `${window.location.origin}${window.location.pathname}?openExternalBrowser=1&login=${encodeURIComponent(user.id)}`;
+        const autoLoginUrl = `${window.location.origin}${window.location.pathname}?openExternalBrowser=1&restoreKey=${encodeURIComponent(user.secretKey || '')}&uid=${encodeURIComponent(user.id)}`;
         const autoUrlInput = document.getElementById('profile-autologin-url');
         if (autoUrlInput) autoUrlInput.value = autoLoginUrl;
         this.openModal('modal-profile');
