@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   FRIENDS: 'gathersync_friends',
   GROUPS: 'gathersync_groups',
   EVENTS: 'gathersync_events',
+  DELETED_EVENTS: 'gathersync_deleted_events',
   NOTIFICATIONS: 'gathersync_notifications',
   SETTINGS: 'gathersync_settings',
   SECURITY: 'gathersync_security'
@@ -471,15 +472,32 @@ export class StorageManager {
     return event;
   }
 
+  static getDeletedEventIds() {
+    try {
+      return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.DELETED_EVENTS) || '[]');
+    } catch(e) { return []; }
+  }
+
+  static addDeletedEventId(eventId) {
+    if (!eventId) return;
+    const list = this.getDeletedEventIds();
+    if (!list.includes(eventId)) {
+      list.push(eventId);
+      if (list.length > 300) list.shift();
+      SafeStorage.setItem(STORAGE_KEYS.DELETED_EVENTS, JSON.stringify(list));
+    }
+  }
+
   static deleteEvent(eventId) {
+    this.addDeletedEventId(eventId);
     const events = this.getEvents().filter(e => e.id !== eventId);
     this.saveEvents(events);
-    ServerApi.deleteEvent(eventId).catch(() => {});
+    return ServerApi.deleteEvent(eventId).catch(() => {});
   }
 
   // --- スマートマージ（サーバーとローカルを安全に統合し、ローカルデータを勝手に消さない） ---
   static mergeFriends(serverFriends) {
-    if (!Array.isArray(serverFriends) || serverFriends.length === 0) return;
+    if (!Array.isArray(serverFriends)) return;
     const local = this.getFriends();
     const me = this.getCurrentUser();
     serverFriends.forEach(sf => {
@@ -495,7 +513,7 @@ export class StorageManager {
   }
 
   static mergeGroups(serverGroups) {
-    if (!Array.isArray(serverGroups) || serverGroups.length === 0) return;
+    if (!Array.isArray(serverGroups)) return;
     const local = this.getGroups();
     serverGroups.forEach(sg => {
       if (!sg || !sg.id) return;
@@ -510,18 +528,34 @@ export class StorageManager {
   }
 
   static mergeEvents(serverEvents) {
-    if (!Array.isArray(serverEvents) || serverEvents.length === 0) return;
-    const local = this.getEvents();
-    serverEvents.forEach(se => {
-      if (!se || !se.id) return;
-      const idx = local.findIndex(le => le.id === se.id);
-      if (idx >= 0) {
-        local[idx] = { ...local[idx], ...se };
+    if (!Array.isArray(serverEvents)) return;
+    const deletedIds = this.getDeletedEventIds();
+    const validServerEvents = serverEvents.filter(se => se && se.id && !deletedIds.includes(se.id));
+    const serverEventMap = new Map(validServerEvents.map(se => [se.id, se]));
+    
+    const local = this.getEvents().filter(le => le && le.id && !deletedIds.includes(le.id));
+    const merged = [];
+
+    validServerEvents.forEach(se => {
+      const localItem = local.find(le => le.id === se.id);
+      if (localItem) {
+        merged.push({ ...localItem, ...se });
       } else {
-        local.unshift(se);
+        merged.push(se);
       }
     });
-    this.saveEvents(local);
+
+    const now = Date.now();
+    local.forEach(le => {
+      if (!serverEventMap.has(le.id)) {
+        const createdAt = le.createdAt ? new Date(le.createdAt).getTime() : 0;
+        if (now - createdAt < 10000) {
+          merged.unshift(le);
+        }
+      }
+    });
+
+    this.saveEvents(merged);
   }
 
   // --- Notifications ---

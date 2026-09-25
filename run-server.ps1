@@ -12,6 +12,7 @@ $script:memoryDB = [ordered]@{
     userFriends = @{}
     groups = [System.Collections.ArrayList]@()
     events = [System.Collections.ArrayList]@()
+    deletedEventIds = [System.Collections.ArrayList]@()
     notifications = [System.Collections.ArrayList]@()
 }
 
@@ -33,6 +34,7 @@ if (Test-Path $dbFile) {
             }
             if ($loaded.groups) { $script:memoryDB.groups = [System.Collections.ArrayList]@($loaded.groups) }
             if ($loaded.events) { $script:memoryDB.events = [System.Collections.ArrayList]@($loaded.events) }
+            if ($loaded.deletedEventIds) { $script:memoryDB.deletedEventIds = [System.Collections.ArrayList]@($loaded.deletedEventIds) }
             if ($loaded.notifications) { $script:memoryDB.notifications = [System.Collections.ArrayList]@($loaded.notifications) }
         }
     } catch {
@@ -210,6 +212,9 @@ while ($listener.IsListening) {
                 if ($body.events) {
                     foreach ($inE in $body.events) {
                         if ($inE -and $inE.id) {
+                            if ($script:memoryDB.deletedEventIds -and $script:memoryDB.deletedEventIds.Contains($inE.id)) {
+                                continue
+                            }
                             $eIdx = -1
                             for ($i = 0; $i -lt $script:memoryDB.events.Count; $i++) {
                                 if ($script:memoryDB.events[$i].id -eq $inE.id) { $eIdx = $i; break }
@@ -229,6 +234,9 @@ while ($listener.IsListening) {
         if ($rawUrl -eq "/api/events/save" -and $request.HttpMethod -eq "POST") {
             $ev = Read-RequestBody $request
             if ($ev -and $ev.id) {
+                if ($script:memoryDB.deletedEventIds -and $script:memoryDB.deletedEventIds.Contains($ev.id)) {
+                    $script:memoryDB.deletedEventIds.Remove($ev.id)
+                }
                 $idx = -1
                 for ($i = 0; $i -lt $script:memoryDB.events.Count; $i++) {
                     if ($script:memoryDB.events[$i].id -eq $ev.id) { $idx = $i; break }
@@ -348,6 +356,12 @@ while ($listener.IsListening) {
                 for ($i = $script:memoryDB.events.Count - 1; $i -ge 0; $i--) {
                     if ($script:memoryDB.events[$i].id -eq $body.eventId) {
                         $script:memoryDB.events.RemoveAt($i)
+                    }
+                }
+                if ($script:memoryDB.deletedEventIds -and (-not $script:memoryDB.deletedEventIds.Contains($body.eventId))) {
+                    [void]$script:memoryDB.deletedEventIds.Add($body.eventId)
+                    if ($script:memoryDB.deletedEventIds.Count -gt 500) {
+                        $script:memoryDB.deletedEventIds.RemoveAt(0)
                     }
                 }
                 Save-DB

@@ -1424,6 +1424,7 @@ body {
       FRIENDS: 'gathersync_friends',
       GROUPS: 'gathersync_groups',
       EVENTS: 'gathersync_events',
+      DELETED_EVENTS: 'gathersync_deleted_events',
       NOTIFICATIONS: 'gathersync_notifications',
       SECURITY: 'gathersync_security'
     };
@@ -1892,11 +1893,28 @@ body {
         return newEv;
       },
 
+      getDeletedEventIds() {
+        try {
+          return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.DELETED_EVENTS) || '[]');
+        } catch(e) { return []; }
+      },
+
+      addDeletedEventId(eventId) {
+        if (!eventId) return;
+        const list = this.getDeletedEventIds();
+        if (!list.includes(eventId)) {
+          list.push(eventId);
+          if (list.length > 300) list.shift();
+          SafeStorage.setItem(STORAGE_KEYS.DELETED_EVENTS, JSON.stringify(list));
+        }
+      },
+
       deleteEvent(eventId) {
+        this.addDeletedEventId(eventId);
         let events = this.getEvents();
         events = events.filter(e => e.id !== eventId);
         SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
-        ServerApi.deleteEvent(eventId).catch(() => {});
+        return ServerApi.deleteEvent(eventId).catch(() => {});
       },
 
       updateRSVP(eventId, userId, status, comment = '') {
@@ -1925,7 +1943,7 @@ body {
 
       // --- スマートマージ（サーバーとローカルを安全に統合し、ローカルデータを勝手に消さない） ---
       mergeFriends(serverFriends) {
-        if (!Array.isArray(serverFriends) || serverFriends.length === 0) return;
+        if (!Array.isArray(serverFriends)) return;
         const local = this.getFriends();
         const me = this.getCurrentUser();
         serverFriends.forEach(sf => {
@@ -1941,7 +1959,7 @@ body {
       },
 
       mergeGroups(serverGroups) {
-        if (!Array.isArray(serverGroups) || serverGroups.length === 0) return;
+        if (!Array.isArray(serverGroups)) return;
         const local = this.getGroups();
         serverGroups.forEach(sg => {
           if (!sg || !sg.id) return;
@@ -1956,18 +1974,37 @@ body {
       },
 
       mergeEvents(serverEvents) {
-        if (!Array.isArray(serverEvents) || serverEvents.length === 0) return;
-        const local = this.getEvents();
-        serverEvents.forEach(se => {
-          if (!se || !se.id) return;
-          const idx = local.findIndex(le => le.id === se.id);
-          if (idx >= 0) {
-            local[idx] = { ...local[idx], ...se };
+        if (!Array.isArray(serverEvents)) return;
+        const deletedIds = this.getDeletedEventIds();
+        // 削除済みIDに含まれるものはサーバーから来ても除外
+        const validServerEvents = serverEvents.filter(se => se && se.id && !deletedIds.includes(se.id));
+        const serverEventMap = new Map(validServerEvents.map(se => [se.id, se]));
+        
+        const local = this.getEvents().filter(le => le && le.id && !deletedIds.includes(le.id));
+        const merged = [];
+
+        // サーバーに存在する最新イベントをマージ
+        validServerEvents.forEach(se => {
+          const localItem = local.find(le => le.id === se.id);
+          if (localItem) {
+            merged.push({ ...localItem, ...se });
           } else {
-            local.unshift(se);
+            merged.push(se);
           }
         });
-        this.saveEvents(local);
+
+        // ローカルにあってサーバーにまだ反映されていない可能性のある新規作成直後（10秒以内）のイベントのみ保持
+        const now = Date.now();
+        local.forEach(le => {
+          if (!serverEventMap.has(le.id)) {
+            const createdAt = le.createdAt ? new Date(le.createdAt).getTime() : 0;
+            if (now - createdAt < 10000) {
+              merged.unshift(le);
+            }
+          }
+        });
+
+        this.saveEvents(merged);
       },
 
       // --- 通知 ---
@@ -2173,26 +2210,19 @@ body {
         const data = await ServerApi.syncGet(me.id);
         if (!data) return;
 
-        // 🛡️ サーバーから受信したデータをスマートマージ（ローカルデータを空上書きで消去しない）
+        // 🛡️ サーバーから受信したデータを同期
         let updated = false;
-        if (Array.isArray(data.friends) && data.friends.length > 0) {
+        if (Array.isArray(data.friends)) {
           StorageManager.mergeFriends(data.friends);
           updated = true;
         }
-        if (Array.isArray(data.groups) && data.groups.length > 0) {
+        if (Array.isArray(data.groups)) {
           StorageManager.mergeGroups(data.groups);
           updated = true;
         }
-        if (Array.isArray(data.events) && data.events.length > 0) {
+        if (Array.isArray(data.events)) {
           StorageManager.mergeEvents(data.events);
           updated = true;
-        }
-
-        // ローカルにデータが存在するのにサーバー側が空の場合は、ローカルデータをサーバーへプッシュして同期
-        const localEvents = StorageManager.getEvents();
-        const localGroups = StorageManager.getGroups();
-        if ((!data.events || data.events.length === 0) && (localEvents.length > 0 || localGroups.length > 0)) {
-          StorageManager.pushAllToServer();
         }
 
         if (updated) {
@@ -3077,12 +3107,12 @@ body {
         this.openModal('modal-event-detail');
       }
 
-      handleDeleteEvent(eventId, eventTitle) {
+      async handleDeleteEvent(eventId, eventTitle) {
         if (confirm(`予定「${eventTitle}」を削除しますか？`)) {
-          StorageManager.deleteEvent(eventId);
+          await StorageManager.deleteEvent(eventId);
           this.closeModal('modal-event-detail');
           this.showToast(`🗑️ 「${eventTitle}」を削除しました`);
-          this.renderEvents();
+          this.renderAll();
         }
       }
 

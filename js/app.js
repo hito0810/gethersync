@@ -60,23 +60,17 @@ class AppController {
     if (!data) return;
 
     let updated = false;
-    if (Array.isArray(data.friends) && data.friends.length > 0) {
+    if (Array.isArray(data.friends)) {
       StorageManager.mergeFriends(data.friends);
       updated = true;
     }
-    if (Array.isArray(data.groups) && data.groups.length > 0) {
+    if (Array.isArray(data.groups)) {
       StorageManager.mergeGroups(data.groups);
       updated = true;
     }
-    if (Array.isArray(data.events) && data.events.length > 0) {
+    if (Array.isArray(data.events)) {
       StorageManager.mergeEvents(data.events);
       updated = true;
-    }
-
-    const localEvents = StorageManager.getEvents();
-    const localGroups = StorageManager.getGroups();
-    if ((!data.events || data.events.length === 0) && (localEvents.length > 0 || localGroups.length > 0)) {
-      StorageManager.pushAllToServer();
     }
 
     if (updated) {

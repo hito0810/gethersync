@@ -12,6 +12,7 @@ let memoryDB = {
   userFriends: {},
   groups: [],
   events: [],
+  deletedEventIds: [],
   notifications: []
 };
 
@@ -26,6 +27,7 @@ function initDB() {
         userFriends: data.userFriends || {},
         groups: data.groups || [],
         events: data.events || [],
+        deletedEventIds: data.deletedEventIds || [],
         notifications: data.notifications || []
       };
     } catch (e) {
@@ -209,6 +211,10 @@ const server = http.createServer((req, res) => {
       try {
         const ev = JSON.parse(body);
         if (ev && ev.id) {
+          // 明示的な個別保存の場合は削除済みリストから除外
+          if (Array.isArray(memoryDB.deletedEventIds)) {
+            memoryDB.deletedEventIds = memoryDB.deletedEventIds.filter(id => id !== ev.id);
+          }
           const idx = memoryDB.events.findIndex(e => e.id === ev.id);
           if (idx >= 0) {
             memoryDB.events[idx] = ev;
@@ -259,7 +265,9 @@ const server = http.createServer((req, res) => {
         }
 
         if (Array.isArray(incoming.events)) {
+          const deletedIds = memoryDB.deletedEventIds || [];
           incoming.events.forEach(e => {
+            if (!e || !e.id || deletedIds.includes(e.id)) return; // 削除済み予定は復活させない
             const idx = memoryDB.events.findIndex(de => de.id === e.id);
             if (idx >= 0) {
               const existing = memoryDB.events[idx];
@@ -446,9 +454,20 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const { eventId } = JSON.parse(body);
-        memoryDB.events = memoryDB.events.filter(e => e.id !== eventId);
-        scheduleSave();
-        broadcastUpdate('event_deleted');
+        if (eventId) {
+          memoryDB.events = memoryDB.events.filter(e => e.id !== eventId);
+          if (!Array.isArray(memoryDB.deletedEventIds)) {
+            memoryDB.deletedEventIds = [];
+          }
+          if (!memoryDB.deletedEventIds.includes(eventId)) {
+            memoryDB.deletedEventIds.push(eventId);
+            if (memoryDB.deletedEventIds.length > 500) {
+              memoryDB.deletedEventIds.shift();
+            }
+          }
+          scheduleSave();
+          broadcastUpdate('event_deleted');
+        }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ success: true, events: memoryDB.events }));
       } catch (e) {
