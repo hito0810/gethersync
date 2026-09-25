@@ -149,9 +149,9 @@ const server = http.createServer((req, res) => {
       return f;
     });
     const myFriendIds = myFriends.map(f => f.id);
-    
+
     // 自分が作成者、またはメンバーに含まれているグループのみ
-    const myGroups = (memoryDB.groups || []).filter(g => 
+    const myGroups = (memoryDB.groups || []).filter(g =>
       g.createdById === userId || (Array.isArray(g.memberIds) && g.memberIds.includes(userId))
     );
 
@@ -453,21 +453,36 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
       try {
-        const { eventId } = JSON.parse(body);
-        if (eventId) {
-          memoryDB.events = memoryDB.events.filter(e => e.id !== eventId);
-          if (!Array.isArray(memoryDB.deletedEventIds)) {
-            memoryDB.deletedEventIds = [];
-          }
-          if (!memoryDB.deletedEventIds.includes(eventId)) {
-            memoryDB.deletedEventIds.push(eventId);
-            if (memoryDB.deletedEventIds.length > 500) {
-              memoryDB.deletedEventIds.shift();
-            }
-          }
-          scheduleSave();
-          broadcastUpdate('event_deleted');
+        const { eventId, userId } = JSON.parse(body);
+        if (!eventId) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'イベントIDが指定されていません' }));
+          return;
         }
+
+        const targetEvent = memoryDB.events.find(e => e.id === eventId);
+        if (targetEvent) {
+          // 作成者本人（または初期互換user_me）のみ削除可能
+          if (targetEvent.createdById && targetEvent.createdById !== 'user_me' && userId && targetEvent.createdById !== userId) {
+            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: '予定を作成した本人のみ削除できます' }));
+            return;
+          }
+        }
+
+        memoryDB.events = memoryDB.events.filter(e => e.id !== eventId);
+        if (!Array.isArray(memoryDB.deletedEventIds)) {
+          memoryDB.deletedEventIds = [];
+        }
+        if (!memoryDB.deletedEventIds.includes(eventId)) {
+          memoryDB.deletedEventIds.push(eventId);
+          if (memoryDB.deletedEventIds.length > 500) {
+            memoryDB.deletedEventIds.shift();
+          }
+        }
+        scheduleSave();
+        broadcastUpdate('event_deleted');
+
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ success: true, events: memoryDB.events }));
       } catch (e) {

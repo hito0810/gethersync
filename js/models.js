@@ -63,7 +63,7 @@ export const CookieManager = {
     try {
       const matches = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
       return matches ? decodeURIComponent(matches[1]) : null;
-    } catch(e) { return null; }
+    } catch (e) { return null; }
   },
   set(name, value, days = 365) {
     try {
@@ -74,7 +74,7 @@ export const CookieManager = {
         expires = '; expires=' + d.toUTCString();
       }
       document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
-    } catch(e) {}
+    } catch (e) { }
   }
 };
 
@@ -102,7 +102,7 @@ export const ServerApi = {
       const res = await fetch(`${this.getBaseUrl()}/api/sync?userId=${encodeURIComponent(userId)}&_t=${Date.now()}`);
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -116,7 +116,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -130,7 +130,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -144,7 +144,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -158,7 +158,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -172,7 +172,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -186,7 +186,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -200,7 +200,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   },
@@ -214,7 +214,7 @@ export const ServerApi = {
       });
       if (!res.ok) return null;
       return await res.json();
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   }
@@ -228,7 +228,7 @@ export class StorageManager {
       try {
         const parsed = JSON.parse(userStr);
         if (parsed && parsed.id && parsed.id !== 'user_me') user = parsed;
-      } catch(e) {}
+      } catch (e) { }
     }
 
     if (!user) {
@@ -277,7 +277,7 @@ export class StorageManager {
     const friends = this.getFriends();
     const groups = this.getGroups();
     const events = this.getEvents();
-    ServerApi.syncPost({ user, friends, groups, events }).catch(() => {});
+    ServerApi.syncPost({ user, friends, groups, events }).catch(() => { });
   }
 
   static resetToDefault() {
@@ -293,7 +293,7 @@ export class StorageManager {
     try {
       const u = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.CURRENT_USER));
       if (u && u.id && u.id !== 'user_me') return u;
-    } catch(e) {}
+    } catch (e) { }
     const newU = { id: generateUniqueUserId('usr'), name: 'あなた', avatar: '🦊', color: '#6366f1' };
     SafeStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newU));
     return newU;
@@ -335,7 +335,7 @@ export class StorageManager {
       friends.push(newFriend);
     }
     this.saveFriends(friends);
-    ServerApi.addFriend(newFriend.id, me.id, me.name, me.avatar, newFriend.name, newFriend.avatar).catch(() => {});
+    ServerApi.addFriend(newFriend.id, me.id, me.name, me.avatar, newFriend.name, newFriend.avatar).catch(() => { });
     return newFriend;
   }
 
@@ -348,7 +348,7 @@ export class StorageManager {
       g.memberIds = (g.memberIds || []).filter(id => id !== friendId);
     });
     this.saveGroups(groups);
-    ServerApi.deleteFriend(me.id, friendId).catch(() => {});
+    ServerApi.deleteFriend(me.id, friendId).catch(() => { });
   }
 
   // --- Groups ---
@@ -377,20 +377,20 @@ export class StorageManager {
     };
     groups.unshift(newGroup);
     this.saveGroups(groups);
-    ServerApi.updateGroup(newGroup).catch(() => {});
+    ServerApi.updateGroup(newGroup).catch(() => { });
     return newGroup;
   }
 
   static updateGroup(group) {
     const groups = this.getGroups().map(g => g.id === group.id ? { ...g, ...group } : g);
     this.saveGroups(groups);
-    ServerApi.updateGroup(group).catch(() => {});
+    ServerApi.updateGroup(group).catch(() => { });
   }
 
   static deleteGroup(groupId) {
     const groups = this.getGroups().filter(g => g.id !== groupId);
     this.saveGroups(groups);
-    ServerApi.deleteGroup(groupId).catch(() => {});
+    ServerApi.deleteGroup(groupId).catch(() => { });
   }
 
   // --- Events ---
@@ -441,7 +441,7 @@ export class StorageManager {
 
     events.unshift(newEvent);
     this.saveEvents(events);
-    ServerApi.saveEvent(newEvent).catch(() => {});
+    ServerApi.saveEvent(newEvent).catch(() => { });
     return newEvent;
   }
 
@@ -468,14 +468,14 @@ export class StorageManager {
     }
 
     this.saveEvents(events);
-    ServerApi.submitRSVP(eventId, userId, currentUser.name, currentUser.avatar, status, comment).catch(() => {});
+    ServerApi.submitRSVP(eventId, userId, currentUser.name, currentUser.avatar, status, comment).catch(() => { });
     return event;
   }
 
   static getDeletedEventIds() {
     try {
       return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.DELETED_EVENTS) || '[]');
-    } catch(e) { return []; }
+    } catch (e) { return []; }
   }
 
   static addDeletedEventId(eventId) {
@@ -492,7 +492,7 @@ export class StorageManager {
     this.addDeletedEventId(eventId);
     const events = this.getEvents().filter(e => e.id !== eventId);
     this.saveEvents(events);
-    return ServerApi.deleteEvent(eventId).catch(() => {});
+    return ServerApi.deleteEvent(eventId).catch(() => { });
   }
 
   // --- スマートマージ（サーバーとローカルを安全に統合し、ローカルデータを勝手に消さない） ---
@@ -532,7 +532,7 @@ export class StorageManager {
     const deletedIds = this.getDeletedEventIds();
     const validServerEvents = serverEvents.filter(se => se && se.id && !deletedIds.includes(se.id));
     const serverEventMap = new Map(validServerEvents.map(se => [se.id, se]));
-    
+
     const local = this.getEvents().filter(le => le && le.id && !deletedIds.includes(le.id));
     const merged = [];
 
