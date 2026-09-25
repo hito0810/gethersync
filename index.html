@@ -1620,8 +1620,11 @@
           const pad = (n) => String(n).padStart(2, '0');
           return date.getUTCFullYear() + pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) + 'T' + pad(date.getUTCHours()) + pad(date.getUTCMinutes()) + pad(date.getUTCSeconds()) + 'Z';
         },
+        getEventUID(eventId) {
+          return 'asobo-event-' + eventId + '@asobo.app';
+        },
         generateICSContent(event) {
-          const uid = 'gathersync-' + event.id + '-' + Date.now() + '@gathersync.app';
+          const uid = this.getEventUID(event.id);
           const dtStamp = this.formatToICSDate(new Date().toISOString());
           const dtStart = this.formatToICSDate(event.startDateTime);
           let endDateTime = event.endDateTime;
@@ -1631,15 +1634,35 @@
             endDateTime = end.toISOString();
           }
           const dtEnd = this.formatToICSDate(endDateTime);
-          const summary = event.title.replace(/[\r\n]/g, ' ');
+          const summary = (event.title || '').replace(/[\r\n]/g, ' ');
           const description = (event.description || '').replace(/[\r\n]/g, '\\n');
           const location = (event.location || '').replace(/[\r\n]/g, ' ');
 
           return [
-            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//GatherSync//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-            'BEGIN:VEVENT', 'UID:' + uid, 'DTSTAMP:' + dtStamp, 'DTSTART:' + dtStart, 'DTEND:' + dtEnd,
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AsoBo//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:0', 'DTSTAMP:' + dtStamp, 'DTSTART:' + dtStart, 'DTEND:' + dtEnd,
             'SUMMARY:' + summary, 'DESCRIPTION:' + description, location ? 'LOCATION:' + location : '',
             'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR'
+          ].filter(Boolean).join('\r\n');
+        },
+        generateCancelICSContent(event) {
+          const uid = this.getEventUID(event.id);
+          const dtStamp = this.formatToICSDate(new Date().toISOString());
+          const dtStart = this.formatToICSDate(event.startDateTime || new Date().toISOString());
+          let endDateTime = event.endDateTime;
+          if (!endDateTime) {
+            const end = new Date(event.startDateTime || new Date());
+            end.setHours(end.getHours() + 2);
+            endDateTime = end.toISOString();
+          }
+          const dtEnd = this.formatToICSDate(endDateTime);
+          const summary = (event.title || '').replace(/[\r\n]/g, ' ');
+
+          return [
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AsoBo//JA', 'CALSCALE:GREGORIAN', 'METHOD:CANCEL',
+            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:1', 'DTSTAMP:' + dtStamp, 'DTSTART:' + dtStart, 'DTEND:' + dtEnd,
+            'SUMMARY:【中止】' + summary, 'DESCRIPTION:この予定はAsoBo上で削除されました。',
+            'STATUS:CANCELLED', 'END:VEVENT', 'END:VCALENDAR'
           ].filter(Boolean).join('\r\n');
         },
         downloadICS(event) {
@@ -1647,7 +1670,17 @@
           const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
           const link = document.createElement('a');
           link.href = window.URL.createObjectURL(blob);
-          link.setAttribute('download', event.title + '_AsoBo.ics');
+          link.setAttribute('download', (event.title || 'event') + '_AsoBo.ics');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        },
+        downloadCancelICS(event) {
+          const icsData = this.generateCancelICSContent(event);
+          const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+          const link = document.createElement('a');
+          link.href = window.URL.createObjectURL(blob);
+          link.setAttribute('download', 'キャンセル_' + (event.title || 'event') + '_AsoBo.ics');
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -3366,11 +3399,6 @@
           if (ev) window.open(CalendarHelper.getGoogleCalendarURL(ev), '_blank');
         }
 
-        downloadCalendarICS(id) {
-          const ev = StorageManager.getEventById(id);
-          if (ev) { CalendarHelper.downloadICS(ev); this.showToast('📥 カレンダーファイル(.ics)をダウンロードしました！'); }
-        }
-
         openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
         closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); }
 
@@ -3609,9 +3637,12 @@
             return;
           }
 
-          if (!confirm(`予定「${eventTitle}」を削除しますか？\n※削除すると全員の画面から予定が消去されます。`)) {
+          if (!confirm(`予定「${eventTitle}」を削除しますか？\n\n※削除すると全員の画面から消去され、カレンダー登録済みの方向けにカレンダー削除ファイル(.ics)が発行されます。`)) {
             return;
           }
+
+          // カレンダー削除用データを退避
+          const evCopy = { ...ev };
 
           const res = await StorageManager.deleteEvent(eventId, me.id);
           if (res && res.success === false) {
@@ -3621,7 +3652,29 @@
 
           this.closeModal('modal-event-detail');
           this.showToast(`🗑️ 「${eventTitle}」を削除しました`);
+          
+          // 📲 カレンダーからも自動削除・キャンセルするための.icsを発行
+          try {
+            CalendarHelper.downloadCancelICS(evCopy);
+          } catch (e) { }
+
           this.renderAll();
+        }
+
+        downloadCalendarICS(id) {
+          const ev = StorageManager.getEventById(id);
+          if (ev) {
+            CalendarHelper.downloadICS(ev);
+            this.showToast('📥 カレンダーに追加しました（削除時もカレンダー連動します）');
+          }
+        }
+
+        downloadCancelCalendarICS(id) {
+          const ev = StorageManager.getEventById(id);
+          if (ev) {
+            CalendarHelper.downloadCancelICS(ev);
+            this.showToast('🗑️ カレンダーから予定を削除しました');
+          }
         }
 
         showToast(msg) {
