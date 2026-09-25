@@ -1,0 +1,16 @@
+# Dependencies & Build
+node_modules/
+.vercel/
+
+# Binaries & Large files
+cloudflared.exe
+*.exe
+
+# IDE / Editor files
+.vs/
+.vscode/
+.idea/
+
+# Local databases & logs
+*.log
+database.json

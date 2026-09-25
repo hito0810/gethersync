@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スマホ接続用 QRコード - GatherSync</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .connect-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .qr-frame {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      display: inline-block;
+      margin: 20px 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .url-badge {
+      background: var(--bg-secondary);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      word-break: break-all;
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      user-select: all;
+    }
+  </style>
+</head>
+<body>
+  <div class="connect-card">
+    <div style="font-size: 36px; margin-bottom: 8px;">📱</div>
+    <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 6px;">スマホで GatherSync を開く</h1>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+      スマホのカメラで下記のQRコードを読み取るか、URLをスマホのブラウザに入力してください。<br>
+      <small style="color: var(--warning);">（※PCと同じWi-Fiに接続してください）</small>
+    </p>
+
+    <div class="qr-frame">
+      <img id="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https://kijiji-painted-eye-labels.trycloudflare.com/?openExternalBrowser=1" alt="QRコード" width="240" height="240" style="display:block;">
+    </div>
+
+    <div class="url-badge" id="target-url">
+      https://kijiji-painted-eye-labels.trycloudflare.com/?openExternalBrowser=1
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="http://localhost:3000/" class="btn btn-primary" target="_blank">
+        💻 PCでアプリを開く
+      </a>
+      <a href="./index.html" class="btn btn-secondary">
+        ← アプリ画面へ戻る
+      </a>
+    </div>
+
+    <div style="margin-top: 24px; text-align: left; font-size: 12px; color: var(--text-muted); background: var(--bg-primary); padding: 12px; border-radius: var(--radius-md);">
+      <strong>💡 スマホで便利に使うコツ（PWA）:</strong>
+      <ul style="padding-left: 18px; margin-top: 6px; line-height: 1.6;">
+        <li><strong>iPhone:</strong> Safari下部の「共有ボタン」→「ホーム画面に追加」</li>
+        <li><strong>Android:</strong> Chrome右上のメニュー「︙」→「アプリをインストール」または「ホーム画面に追加」</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

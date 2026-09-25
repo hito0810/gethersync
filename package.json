@@ -1,0 +1,13 @@
+{
+  "name": "gathersync",
+  "version": "1.0.0",
+  "description": "GatherSync - Real-Time Group RSVP & Calendar Sync Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["calendar", "rsvp", "sync", "realtime"],
+  "author": "",
+  "license": "MIT"
+}

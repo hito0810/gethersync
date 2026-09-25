@@ -1,0 +1,16 @@
+{
+  "name": "GatherSync - 友達グループ出欠＆カレンダー連携",
+  "short_name": "GatherSync",
+  "description": "友達を誘ってグループ分け、出欠確認から締切時のスマホカレンダー自動登録までを一元化するスマートイベント管理アプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><path d='M30 25 h40 a5 5 0 0 1 5 5 v45 a5 5 0 0 1 -5 5 h-40 a5 5 0 0 1 -5 -5 v-45 a5 5 0 0 1 5 -5 z' fill='white' opacity='0.2'/><rect x='25' y='32' width='50' height='48' rx='8' fill='white'/><rect x='25' y='32' width='50' height='14' rx='8' fill='%234f46e5'/><circle cx='40' cy='60' r='5' fill='%2310b981'/><circle cx='60' cy='60' r='5' fill='%236366f1'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
