@@ -10,19 +10,20 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><circle cx='50' cy='50' r='30' fill='white'/></svg>">
   
   <script>
-    // 🚀 LINE内蔵ブラウザ検知: 端末の標準ブラウザ（Safari / Chrome）へ自動移行
+    // 🚀 古いService Workerキャッシュを完全破棄して常に最新コードを保証
     (function() {
       try {
-        var ua = navigator.userAgent || navigator.vendor || window.opera || '';
-        var isLine = /Line\//i.test(ua) || /LINE/i.test(ua);
-        if (isLine) {
-          var currentUrl = new URL(window.location.href);
-          if (!currentUrl.searchParams.has('openExternalBrowser')) {
-            currentUrl.searchParams.set('openExternalBrowser', '1');
-            window.location.replace(currentUrl.toString());
-          }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for (var r of regs) r.unregister();
+          });
         }
-      } catch (e) {}
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            for (var k of keys) caches.delete(k);
+          });
+        }
+      } catch(e) {}
     })();
   </script>
 
@@ -688,19 +689,17 @@ body {
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  display: flex;
+  display: none !important;
   align-items: center;
   justify-content: center;
   padding: 16px;
   z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transition: var(--transition-fast);
+  pointer-events: none !important;
 }
 
 .modal-overlay.active {
-  opacity: 1;
-  visibility: visible;
+  display: flex !important;
+  pointer-events: auto !important;
 }
 
 .modal-box {
@@ -1428,6 +1427,8 @@ body {
   <!-- ALL LOGIC INLINED FOR INSTANT SAFARI COMPATIBILITY -->
   <script>
   (function() {
+    window.App = window.App || {};
+
     const sanitize = (str) => {
       if (typeof str !== 'string') return str || '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
