@@ -695,14 +695,12 @@ body {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
   transition: var(--transition-fast);
 }
 
 .modal-overlay.active {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
 }
 
 .modal-box {
@@ -2128,17 +2126,19 @@ body {
         this.syncInterval = null;
         this.eventSource = null;
         this.lastDataHash = '';
-        window.App = this;
       }
 
       init() {
+        StorageManager.init();
+        this.bindEvents();
+        this.renderAll();
+        this.checkUrlParams();
+        this.checkLineInAppBrowser();
+        
+        // ⚡ 公開サーバー リアルタイム双方向同期を開始
+        this.setupRealtimeSync();
+
         window.App = this;
-        try { StorageManager.init(); } catch(e) { console.warn('StorageManager.init error:', e); }
-        try { this.bindEvents(); } catch(e) { console.warn('bindEvents error:', e); }
-        try { this.renderAll(); } catch(e) { console.warn('renderAll error:', e); }
-        try { this.checkUrlParams(); } catch(e) { console.warn('checkUrlParams error:', e); }
-        try { this.checkLineInAppBrowser(); } catch(e) { console.warn('checkLineInAppBrowser error:', e); }
-        try { this.setupRealtimeSync(); } catch(e) { console.warn('setupRealtimeSync error:', e); }
       }
 
       // --- ⚡ リアルタイム同期マネージャー (SSE + 定期ポーリング) ---
@@ -2918,17 +2918,10 @@ body {
           groupSelect.innerHTML = '<option value="">（全体公開 / 全ての友達）</option>' + groups.map(g => `<option value="${g.id}" ${gid === g.id ? 'selected' : ''}>${g.icon} ${g.name}</option>`).join('');
         }
         const tomorrow = new Date(Date.now() + 86400000);
-        const yyyy = tomorrow.getFullYear();
-        const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-        const dd = String(tomorrow.getDate()).padStart(2, '0');
-        const datePrefix = `${yyyy}-${mm}-${dd}`;
-        
-        const elStart = document.getElementById('event-start');
-        const elEnd = document.getElementById('event-end');
-        const elDeadline = document.getElementById('event-deadline');
-        if (elStart) elStart.value = `${datePrefix}T19:00`;
-        if (elEnd) elEnd.value = `${datePrefix}T21:00`;
-        if (elDeadline) elDeadline.value = `${datePrefix}T12:00`;
+        const startStr = tomorrow.toISOString().slice(0, 10) + 'T19:00';
+        document.getElementById('event-start').value = startStr;
+        document.getElementById('event-end').value = tomorrow.toISOString().slice(0, 10) + 'T21:00';
+        document.getElementById('event-deadline').value = tomorrow.toISOString().slice(0, 10) + 'T12:00';
         this.openModal('modal-new-event');
       }
 
@@ -3292,6 +3285,23 @@ body {
         }
       }
     }
+
+    // スマホでのピンチズーム・ダブルタップズームを無効化（アプリの操作感維持）
+    document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+    
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        // ダブルタップズームのみ抑止（ボタンや入力のタップは通常通り発火）
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
+          e.preventDefault();
+        }
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
 
     const app = new Controller();
     if (document.readyState === 'loading') {
