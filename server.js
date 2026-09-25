@@ -437,24 +437,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // --- API エンドポイント: 全データ完全消去＆全端末強制パージ (POST /api/admin/reset) ---
-  if ((pathname === '/api/admin/reset' || pathname === '/api/reset') && (req.method === 'POST' || req.method === 'GET')) {
-    const newEpoch = Date.now();
-    memoryDB = {
-      epoch: newEpoch,
-      users: {},
-      userFriends: {},
-      groups: [],
-      events: [],
-      notifications: []
-    };
-    fs.writeFileSync(DB_FILE, JSON.stringify(memoryDB, null, 2), 'utf-8');
-    broadcastUpdate('all_reset');
 
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ success: true, message: '全ユーザーおよび全データを完全初期化しました。', epoch: newEpoch }));
-    return;
-  }
 
   // --- API エンドポイント: 予定削除 (POST /api/events/delete) ---
   if (pathname === '/api/events/delete' && req.method === 'POST') {
@@ -533,21 +516,7 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({ error: 'User not found' }));
     return;
   }
-  // --- API エンドポイント: 全データ完全クリア (POST /api/reset) ---
-  if (pathname === '/api/reset' && req.method === 'POST') {
-    memoryDB = {
-      users: {},
-      userFriends: {},
-      groups: [],
-      events: [],
-      notifications: []
-    };
-    fs.writeFileSync(DB_FILE, JSON.stringify(memoryDB, null, 2), 'utf-8');
-    broadcastUpdate('all_reset');
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ success: true, message: 'All data cleared' }));
-    return;
-  }
+
 
   // --- 静的ファイルの配信 ---
   let filePath = path.join(__dirname, pathname);
