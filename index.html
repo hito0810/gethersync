@@ -30,6 +30,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
+  <!-- Real QR Code Generator Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
 /* GatherSync Clean iOS / LINE Style Stylesheet */
 :root {
@@ -2592,7 +2595,7 @@ body {
         this.renderAll();
       }
 
-      // Canvas QR Code Generator
+      // Real High-Quality QR Code Generator
       drawQRCode(canvasId, text) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
@@ -2602,28 +2605,39 @@ body {
         canvas.height = size;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size, size);
-        ctx.fillStyle = '#0f172a';
-        const numCells = 21;
-        const cellSize = size / numCells;
 
-        const drawFinder = (x, y) => {
-          ctx.fillRect(x * cellSize, y * cellSize, 7 * cellSize, 7 * cellSize);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect((x + 1) * cellSize, (y + 1) * cellSize, 5 * cellSize, 5 * cellSize);
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect((x + 2) * cellSize, (y + 2) * cellSize, 3 * cellSize, 3 * cellSize);
-        };
-        drawFinder(1, 1);
-        drawFinder(numCells - 8, 1);
-        drawFinder(1, numCells - 8);
-
-        for (let r = 0; r < numCells; r++) {
-          for (let c = 0; c < numCells; c++) {
-            if ((r < 8 && c < 8) || (r < 8 && c > numCells - 9) || (r > numCells - 9 && c < 8)) continue;
-            const hash = (r * 19 + c * 31 + text.length * 11) % 3;
-            if (hash === 0) ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-          }
+        // 1. QRCode.js ライブラリが利用可能な場合（クライアント高速生成）
+        if (typeof QRCode !== 'undefined') {
+          const tempDiv = document.createElement('div');
+          try {
+            new QRCode(tempDiv, {
+              text: text,
+              width: size,
+              height: size,
+              correctLevel: QRCode.CorrectLevel.M
+            });
+            setTimeout(() => {
+              const qrCanvas = tempDiv.querySelector('canvas');
+              const qrImg = tempDiv.querySelector('img');
+              if (qrCanvas) {
+                ctx.drawImage(qrCanvas, 0, 0, size, size);
+              } else if (qrImg && qrImg.src) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0, size, size);
+                img.src = qrImg.src;
+              }
+            }, 50);
+            return;
+          } catch(e) {}
         }
+
+        // 2. フォールバック（QR Server API経由で高精度QRコードを描画）
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, size, size);
+        };
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=2&data=${encodeURIComponent(text)}`;
       }
 
       // --- 予定一覧 ---
