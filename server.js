@@ -222,11 +222,22 @@ const server = http.createServer((req, res) => {
       return false;
     });
 
-    const formatToICSDate = (dateStr) => {
+    const formatToLocalICSDate = (dateStr) => {
       if (!dateStr) return '';
-      const date = new Date(dateStr);
+      // '2026-09-26T19:00' や '2026-09-26T19:00:00.000Z' からローカルの年月日・時分秒を正確に抽出
+      const d = new Date(dateStr);
+      // JST (Asia/Tokyo = UTC+9) でのローカル時間を取得
+      const jstDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
       const pad = (n) => String(n).padStart(2, '0');
-      return date.getUTCFullYear() + pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) + 'T' + pad(date.getUTCHours()) + pad(date.getUTCMinutes()) + pad(date.getUTCSeconds()) + 'Z';
+      return (
+        jstDate.getFullYear() +
+        pad(jstDate.getMonth() + 1) +
+        pad(jstDate.getDate()) +
+        'T' +
+        pad(jstDate.getHours()) +
+        pad(jstDate.getMinutes()) +
+        pad(jstDate.getSeconds())
+      );
     };
 
     const lines = [
@@ -237,22 +248,31 @@ const server = http.createServer((req, res) => {
       'METHOD:PUBLISH',
       'X-WR-CALNAME:AsoBo 予定カレンダー',
       'X-WR-TIMEZONE:Asia/Tokyo',
-      'REFRESH-INTERVAL;VALUE=DURATION:PT10M',
-      'X-PUBLISHED-TTL:PT10M'
+      'BEGIN:VTIMEZONE',
+      'TZID:Asia/Tokyo',
+      'BEGIN:STANDARD',
+      'DTSTART:19700101T000000',
+      'TZOFFSETFROM:+0900',
+      'TZOFFSETTO:+0900',
+      'TZNAME:JST',
+      'END:STANDARD',
+      'END:VTIMEZONE',
+      'REFRESH-INTERVAL;VALUE=DURATION:PT5M',
+      'X-PUBLISHED-TTL:PT5M'
     ];
 
-    const dtStamp = formatToICSDate(new Date().toISOString());
+    const dtStamp = formatToLocalICSDate(new Date().toISOString());
 
     myEvents.forEach(e => {
       const uid = `asobo-event-${e.id}@asobo.app`;
-      const dtStart = formatToICSDate(e.startDateTime);
+      const dtStart = formatToLocalICSDate(e.startDateTime);
       let endDateTime = e.endDateTime;
       if (!endDateTime) {
         const end = new Date(e.startDateTime);
         end.setHours(end.getHours() + 2);
         endDateTime = end.toISOString();
       }
-      const dtEnd = formatToICSDate(endDateTime);
+      const dtEnd = formatToLocalICSDate(endDateTime);
       const summary = (e.title || '').replace(/[\r\n]/g, ' ');
       const description = (e.description || '').replace(/[\r\n]/g, '\\n');
       const location = (e.location || '').replace(/[\r\n]/g, ' ');
@@ -260,9 +280,9 @@ const server = http.createServer((req, res) => {
       lines.push('BEGIN:VEVENT');
       lines.push(`UID:${uid}`);
       lines.push('SEQUENCE:0');
-      lines.push(`DTSTAMP:${dtStamp}`);
-      lines.push(`DTSTART:${dtStart}`);
-      lines.push(`DTEND:${dtEnd}`);
+      lines.push(`DTSTAMP;TZID=Asia/Tokyo:${dtStamp}`);
+      lines.push(`DTSTART;TZID=Asia/Tokyo:${dtStart}`);
+      lines.push(`DTEND;TZID=Asia/Tokyo:${dtEnd}`);
       lines.push(`SUMMARY:${summary}`);
       if (description) lines.push(`DESCRIPTION:${description}`);
       if (location) lines.push(`LOCATION:${location}`);

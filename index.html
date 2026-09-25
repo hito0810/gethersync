@@ -1629,52 +1629,76 @@
       };
 
       const CalendarHelper = {
-        formatToICSDate(dateStr) {
-          const date = new Date(dateStr);
+        formatToLocalICSDate(dateStr) {
+          if (!dateStr) return '';
+          const d = new Date(dateStr);
+          const jstDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
           const pad = (n) => String(n).padStart(2, '0');
-          return date.getUTCFullYear() + pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) + 'T' + pad(date.getUTCHours()) + pad(date.getUTCMinutes()) + pad(date.getUTCSeconds()) + 'Z';
+          return (
+            jstDate.getFullYear() +
+            pad(jstDate.getMonth() + 1) +
+            pad(jstDate.getDate()) +
+            'T' +
+            pad(jstDate.getHours()) +
+            pad(jstDate.getMinutes()) +
+            pad(jstDate.getSeconds())
+          );
         },
         getEventUID(eventId) {
           return 'asobo-event-' + eventId + '@asobo.app';
         },
         generateICSContent(event) {
           const uid = this.getEventUID(event.id);
-          const dtStamp = this.formatToICSDate(new Date().toISOString());
-          const dtStart = this.formatToICSDate(event.startDateTime);
+          const dtStamp = this.formatToLocalICSDate(new Date().toISOString());
+          const dtStart = this.formatToLocalICSDate(event.startDateTime);
           let endDateTime = event.endDateTime;
           if (!endDateTime) {
             const end = new Date(event.startDateTime);
             end.setHours(end.getHours() + 2);
             endDateTime = end.toISOString();
           }
-          const dtEnd = this.formatToICSDate(endDateTime);
+          const dtEnd = this.formatToLocalICSDate(endDateTime);
           const summary = (event.title || '').replace(/[\r\n]/g, ' ');
           const description = (event.description || '').replace(/[\r\n]/g, '\\n');
           const location = (event.location || '').replace(/[\r\n]/g, ' ');
 
           return [
             'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AsoBo//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:0', 'DTSTAMP:' + dtStamp, 'DTSTART:' + dtStart, 'DTEND:' + dtEnd,
+            'X-WR-CALNAME:AsoBo 予定カレンダー', 'X-WR-TIMEZONE:Asia/Tokyo',
+            'BEGIN:VTIMEZONE', 'TZID:Asia/Tokyo',
+            'BEGIN:STANDARD', 'DTSTART:19700101T000000', 'TZOFFSETFROM:+0900', 'TZOFFSETTO:+0900', 'TZNAME:JST', 'END:STANDARD',
+            'END:VTIMEZONE',
+            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:0',
+            'DTSTAMP;TZID=Asia/Tokyo:' + dtStamp,
+            'DTSTART;TZID=Asia/Tokyo:' + dtStart,
+            'DTEND;TZID=Asia/Tokyo:' + dtEnd,
             'SUMMARY:' + summary, 'DESCRIPTION:' + description, location ? 'LOCATION:' + location : '',
             'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR'
           ].filter(Boolean).join('\r\n');
         },
         generateCancelICSContent(event) {
           const uid = this.getEventUID(event.id);
-          const dtStamp = this.formatToICSDate(new Date().toISOString());
-          const dtStart = this.formatToICSDate(event.startDateTime || new Date().toISOString());
+          const dtStamp = this.formatToLocalICSDate(new Date().toISOString());
+          const dtStart = this.formatToLocalICSDate(event.startDateTime || new Date().toISOString());
           let endDateTime = event.endDateTime;
           if (!endDateTime) {
             const end = new Date(event.startDateTime || new Date());
             end.setHours(end.getHours() + 2);
             endDateTime = end.toISOString();
           }
-          const dtEnd = this.formatToICSDate(endDateTime);
+          const dtEnd = this.formatToLocalICSDate(endDateTime);
           const summary = (event.title || '').replace(/[\r\n]/g, ' ');
 
           return [
             'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AsoBo//JA', 'CALSCALE:GREGORIAN', 'METHOD:CANCEL',
-            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:1', 'DTSTAMP:' + dtStamp, 'DTSTART:' + dtStart, 'DTEND:' + dtEnd,
+            'X-WR-CALNAME:AsoBo 予定カレンダー', 'X-WR-TIMEZONE:Asia/Tokyo',
+            'BEGIN:VTIMEZONE', 'TZID:Asia/Tokyo',
+            'BEGIN:STANDARD', 'DTSTART:19700101T000000', 'TZOFFSETFROM:+0900', 'TZOFFSETTO:+0900', 'TZNAME:JST', 'END:STANDARD',
+            'END:VTIMEZONE',
+            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:1',
+            'DTSTAMP;TZID=Asia/Tokyo:' + dtStamp,
+            'DTSTART;TZID=Asia/Tokyo:' + dtStart,
+            'DTEND;TZID=Asia/Tokyo:' + dtEnd,
             'SUMMARY:【中止】' + summary, 'DESCRIPTION:この予定はAsoBo上で削除されました。',
             'STATUS:CANCELLED', 'END:VEVENT', 'END:VCALENDAR'
           ].filter(Boolean).join('\r\n');
@@ -1700,16 +1724,21 @@
           document.body.removeChild(link);
         },
         getGoogleCalendarURL(event) {
-          const startStr = this.formatToICSDate(event.startDateTime);
+          const startStr = this.formatToLocalICSDate(event.startDateTime);
           let endDateTime = event.endDateTime;
           if (!endDateTime) {
             const end = new Date(event.startDateTime);
             end.setHours(end.getHours() + 2);
             endDateTime = end.toISOString();
           }
-          const endStr = this.formatToICSDate(endDateTime);
+          const endStr = this.formatToLocalICSDate(endDateTime);
           const params = new URLSearchParams({
-            action: 'TEMPLATE', text: event.title, dates: startStr + '/' + endStr, details: event.description || '', location: event.location || ''
+            action: 'TEMPLATE',
+            text: event.title,
+            dates: startStr + '/' + endStr,
+            ctz: 'Asia/Tokyo',
+            details: event.description || '',
+            location: event.location || ''
           });
           return 'https://calendar.google.com/calendar/render?' + params.toString();
         }
