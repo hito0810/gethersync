@@ -30,7 +30,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-  <!-- Real QR Code Generator Library -->
+  <!-- Real High-Precision QR Code Generator Library (SVG Vector) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
@@ -2294,12 +2295,12 @@ body {
       // --- URLパラメータ（友達招待）の解析 ＆ サーバー即時追加 ---
       checkUrlParams() {
         const params = new URLSearchParams(window.location.search);
-        const inviteType = params.get('invite');
-        const hostName = params.get('hostName') || '友達';
-        const hostAvatar = params.get('hostAvatar') || '🦊';
-        const hostId = params.get('hostId');
+        const hostId = params.get('hostId') || params.get('h');
+        const hostName = params.get('hostName') || params.get('n') || '友達';
+        const hostAvatar = params.get('hostAvatar') || params.get('a') || '🦊';
+        const isInvite = params.get('invite') === 'friend' || Boolean(params.get('h')) || Boolean(params.get('hostId'));
 
-        if (inviteType === 'friend' && hostId) {
+        if (isInvite && hostId) {
           const me = StorageManager.getCurrentUser();
 
           // 1. 自分の招待リンクを自分で開いた場合は無視してURLクリア
@@ -2393,8 +2394,8 @@ body {
       openFriendInviteModal() {
         const user = StorageManager.getCurrentUser();
         const base = window.location.origin + window.location.pathname;
-        const avatarParam = (user.avatar && !user.avatar.startsWith('data:image/')) ? user.avatar : '🦊';
-        const inviteUrl = `${base}?openExternalBrowser=1&invite=friend&hostId=${encodeURIComponent(user.id)}&hostName=${encodeURIComponent(user.name)}&hostAvatar=${encodeURIComponent(avatarParam)}`;
+        // 超短縮URL（QRコードのドットを粗く大きくしてカメラ認識率をMAXに向上）
+        const inviteUrl = `${base}?h=${encodeURIComponent(user.id)}&n=${encodeURIComponent(user.name)}`;
         
         document.getElementById('friend-invite-url-input').value = inviteUrl;
         this.drawQRCode('friend-invite-qr-container', inviteUrl);
@@ -2410,14 +2411,14 @@ body {
         const textToCopy = input.value;
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(textToCopy).then(() => {
-            this.showToast('📋 招待URLをコピーしました！（LINEで開くと自動でSafari/Chromeが起動します）');
+            this.showToast('📋 招待URLをコピーしました！');
           }).catch(() => {
             document.execCommand('copy');
-            this.showToast('📋 招待URLをコピーしました！（LINEで開くと自動でSafari/Chromeが起動します）');
+            this.showToast('📋 招待URLをコピーしました！');
           });
         } else {
           document.execCommand('copy');
-          this.showToast('📋 招待URLをコピーしました！（LINEで開くと自動でSafari/Chromeが起動します）');
+          this.showToast('📋 招待URLをコピーしました！');
         }
       }
 
@@ -2451,8 +2452,7 @@ body {
         if (!ev) return;
         const user = StorageManager.getCurrentUser();
         const base = window.location.origin + window.location.pathname;
-        const avatarParam = (user.avatar && !user.avatar.startsWith('data:image/')) ? user.avatar : '🦊';
-        const shareUrl = `${base}?openExternalBrowser=1&invite=friend&hostId=${encodeURIComponent(user.id)}&hostName=${encodeURIComponent(user.name)}&hostAvatar=${encodeURIComponent(avatarParam)}&event=${encodeURIComponent(ev.id)}`;
+        const shareUrl = `${base}?h=${encodeURIComponent(user.id)}&n=${encodeURIComponent(user.name)}&event=${encodeURIComponent(ev.id)}`;
         const titleElem = document.getElementById('share-event-title');
         if (titleElem) titleElem.textContent = `📅 「${ev.title}」に友達を招待`;
         const inputElem = document.getElementById('share-url-input');
@@ -2597,14 +2597,35 @@ body {
         this.renderAll();
       }
 
-      // Real High-Quality QR Code Generator
+      // Real High-Quality Vector SVG QR Code Generator
       drawQRCode(containerId, text) {
         const container = document.getElementById(containerId);
         if (!container) return;
         container.innerHTML = '';
         const size = 135;
 
-        // 1. QRCode.js で即時直接レンダリング
+        // 1. qrcode-generator による完全ベクターSVG描画（極限の鮮明度＆高精度）
+        if (typeof qrcode !== 'undefined') {
+          try {
+            // Type 0 = 最適な最小セル数を自動選定、ErrorCorrection 'M'
+            const qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+            const cellCount = qr.getModuleCount();
+            const cellSize = Math.floor(size / (cellCount + 4));
+            container.innerHTML = qr.createSvgTag(cellSize, 2);
+            const svg = container.querySelector('svg');
+            if (svg) {
+              svg.style.width = '100%';
+              svg.style.height = '100%';
+              svg.style.display = 'block';
+              svg.style.shapeRendering = 'crispEdges'; // 滲みをゼロにして読み取り精度を最大化
+            }
+            return;
+          } catch(e) {}
+        }
+
+        // 2. QRCode.js での描画
         if (typeof QRCode !== 'undefined') {
           try {
             new QRCode(container, {
@@ -2617,9 +2638,9 @@ body {
           } catch(e) {}
         }
 
-        // 2. 万が一のフォールバック（高解像度QR画像タグ）
+        // 3. 万が一のフォールバック
         const img = document.createElement('img');
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=1&data=${encodeURIComponent(text)}`;
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=2&data=${encodeURIComponent(text)}`;
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'contain';
