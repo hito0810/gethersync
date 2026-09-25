@@ -1185,7 +1185,7 @@ body {
       </div>
       <p id="share-event-title" style="font-weight: 700; font-size: 16px; margin-bottom: 12px;"></p>
       <div style="display: flex; justify-content: center; margin-bottom: 16px;">
-        <canvas id="share-qr-canvas" style="border-radius: 12px; box-shadow: var(--shadow-sm); border: 4px solid #fff;"></canvas>
+        <div id="share-qr-container" style="width: 180px; height: 180px; border-radius: 12px; box-shadow: var(--shadow-sm); border: 4px solid #fff; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden;"></div>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
         <input type="text" id="share-url-input" class="form-input" readonly style="text-align: center; font-size: 13px;">
@@ -1223,7 +1223,7 @@ body {
         <span>🚀</span> <span>LINEに貼り付けて送っても、相手の標準ブラウザ（Safari / Chrome）が自動で起動します</span>
       </div>
       <div style="display: flex; justify-content: center; margin-bottom: 14px;">
-        <canvas id="friend-invite-qr-canvas" style="border-radius: 12px; box-shadow: var(--shadow-sm); border: 4px solid #fff;"></canvas>
+        <div id="friend-invite-qr-container" style="width: 180px; height: 180px; border-radius: 12px; box-shadow: var(--shadow-sm); border: 4px solid #fff; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden;"></div>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
         <input type="text" id="friend-invite-url-input" class="form-input" readonly style="text-align: center; font-size: 13px;" onclick="window.App.copyFriendInviteUrl()">
@@ -2393,10 +2393,11 @@ body {
       openFriendInviteModal() {
         const user = StorageManager.getCurrentUser();
         const base = window.location.origin + window.location.pathname;
-        const inviteUrl = `${base}?openExternalBrowser=1&invite=friend&hostId=${encodeURIComponent(user.id)}&hostName=${encodeURIComponent(user.name)}&hostAvatar=${encodeURIComponent(user.avatar)}`;
+        const avatarParam = (user.avatar && !user.avatar.startsWith('data:image/')) ? user.avatar : '🦊';
+        const inviteUrl = `${base}?openExternalBrowser=1&invite=friend&hostId=${encodeURIComponent(user.id)}&hostName=${encodeURIComponent(user.name)}&hostAvatar=${encodeURIComponent(avatarParam)}`;
         
         document.getElementById('friend-invite-url-input').value = inviteUrl;
-        this.drawQRCode('friend-invite-qr-canvas', inviteUrl);
+        this.drawQRCode('friend-invite-qr-container', inviteUrl);
         this.openModal('modal-friend-invite');
       }
 
@@ -2450,12 +2451,13 @@ body {
         if (!ev) return;
         const user = StorageManager.getCurrentUser();
         const base = window.location.origin + window.location.pathname;
-        const shareUrl = `${base}?openExternalBrowser=1&invite=friend&hostId=${encodeURIComponent(user.id)}&hostName=${encodeURIComponent(user.name)}&hostAvatar=${encodeURIComponent(user.avatar)}&event=${encodeURIComponent(ev.id)}`;
+        const avatarParam = (user.avatar && !user.avatar.startsWith('data:image/')) ? user.avatar : '🦊';
+        const shareUrl = `${base}?openExternalBrowser=1&invite=friend&hostId=${encodeURIComponent(user.id)}&hostName=${encodeURIComponent(user.name)}&hostAvatar=${encodeURIComponent(avatarParam)}&event=${encodeURIComponent(ev.id)}`;
         const titleElem = document.getElementById('share-event-title');
         if (titleElem) titleElem.textContent = `📅 「${ev.title}」に友達を招待`;
         const inputElem = document.getElementById('share-url-input');
         if (inputElem) inputElem.value = shareUrl;
-        this.drawQRCode('share-qr-canvas', shareUrl);
+        this.drawQRCode('share-qr-container', shareUrl);
         this.openModal('modal-share');
       }
 
@@ -2596,48 +2598,33 @@ body {
       }
 
       // Real High-Quality QR Code Generator
-      drawQRCode(canvasId, text) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+      drawQRCode(containerId, text) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
         const size = 180;
-        canvas.width = size;
-        canvas.height = size;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, size, size);
 
-        // 1. QRCode.js ライブラリが利用可能な場合（クライアント高速生成）
+        // 1. QRCode.js で即時直接レンダリング
         if (typeof QRCode !== 'undefined') {
-          const tempDiv = document.createElement('div');
           try {
-            new QRCode(tempDiv, {
+            new QRCode(container, {
               text: text,
               width: size,
               height: size,
               correctLevel: QRCode.CorrectLevel.M
             });
-            setTimeout(() => {
-              const qrCanvas = tempDiv.querySelector('canvas');
-              const qrImg = tempDiv.querySelector('img');
-              if (qrCanvas) {
-                ctx.drawImage(qrCanvas, 0, 0, size, size);
-              } else if (qrImg && qrImg.src) {
-                const img = new Image();
-                img.onload = () => ctx.drawImage(img, 0, 0, size, size);
-                img.src = qrImg.src;
-              }
-            }, 50);
             return;
           } catch(e) {}
         }
 
-        // 2. フォールバック（QR Server API経由で高精度QRコードを描画）
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, size, size);
-        };
+        // 2. 万が一のフォールバック（高解像度QR画像タグ）
+        const img = document.createElement('img');
         img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=2&data=${encodeURIComponent(text)}`;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.alt = 'QR Code';
+        container.appendChild(img);
       }
 
       // --- 予定一覧 ---
