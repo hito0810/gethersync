@@ -695,12 +695,14 @@ body {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition: var(--transition-fast);
 }
 
 .modal-overlay.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
 .modal-box {
@@ -3285,23 +3287,6 @@ body {
         }
       }
     }
-
-    // スマホでのピンチズーム・ダブルタップズームを無効化（アプリの操作感維持）
-    document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-    document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
-    document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
-    
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', (e) => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        // ダブルタップズームのみ抑止（ボタンや入力のタップは通常通り発火）
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
-          e.preventDefault();
-        }
-      }
-      lastTouchEnd = now;
-    }, { passive: false });
 
     const app = new Controller();
     if (document.readyState === 'loading') {
