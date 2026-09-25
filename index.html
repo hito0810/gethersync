@@ -1734,8 +1734,8 @@
             location: '奥多摩リバーサイドキャンプ場',
             startDateTime: new Date(now.getTime() + 18 * 60 * 60 * 1000).toISOString(),
             deadlineDateTime: in10Hours.toISOString(),
-            createdByName: 'たくみ',
-            createdByAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80',
+            createdByName: 'あなた',
+            createdByAvatar: '🦊',
             thumbUrl: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80',
             description: '秋の星空キャンプ！防寒着を持ってきてね',
             attendees: [
@@ -3554,13 +3554,19 @@
           const ev = StorageManager.getEventById(id);
           if (!ev) return;
           const me = StorageManager.getCurrentUser();
-          const isOwner = (ev.createdById === me.id || ev.createdById === 'user_me' || !ev.createdById);
+          const isOwner = (ev.createdById === me.id || ev.createdById === 'user_me' || !ev.createdById || ev.createdByName === me.name || ev.createdByName === 'あなた');
           const creatorName = ev.createdByName || '友達';
           const going = (ev.attendees || []).filter(a => a.status === 'going');
 
           let deleteBtnHtml = '';
           if (isOwner) {
-            deleteBtnHtml = `<button class="btn btn-secondary btn-sm" style="color:var(--danger); border-color:rgba(239, 68, 68, 0.3);" onclick="window.App.handleDeleteEvent('${ev.id}', '${sanitize(ev.title)}')">🗑️ 予定を削除</button>`;
+            deleteBtnHtml = `
+              <div style="margin-top: 20px; padding-top: 14px; border-top: 1px dashed #e2e8f0; text-align: center;">
+                <button type="button" class="btn btn-secondary btn-full" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.25); background: #fff5f5; font-weight: 700;" onclick="window.App.handleDeleteEvent('${ev.id}', '${sanitize(ev.title)}')">
+                  🗑️ この予定を削除する
+                </button>
+              </div>
+            `;
           }
 
           document.getElementById('event-detail-content').innerHTML = `
@@ -3568,26 +3574,26 @@
             <div>
               <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
                 <span class="group-tag">👥 ${sanitize(ev.groupName || '全体')}</span>
-                ${isOwner ? '<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(99,102,241,0.15); color:var(--primary); font-weight:700;">👑 あなたが作成</span>' : `<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(100,116,139,0.12); color:var(--text-secondary); font-weight:600;">👤 主催: ${sanitize(creatorName)}</span>`}
+                ${isOwner ? '<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(0,181,108,0.12); color:var(--primary); font-weight:700;">👑 あなたが作成</span>' : `<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(100,116,139,0.12); color:var(--text-secondary); font-weight:600;">👤 主催: ${sanitize(creatorName)}</span>`}
               </div>
-              <h3 style="font-size:18px; font-weight:700;">${sanitize(ev.title)}</h3>
+              <h3 style="font-size:18px; font-weight:800; color:#1e293b;">${sanitize(ev.title)}</h3>
             </div>
-            ${deleteBtnHtml}
           </div>
           <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px;">${sanitize(ev.description || '説明なし')}</p>
-          <div style="background:var(--bg-primary); padding:12px; border-radius:var(--radius-md); font-size:13px; margin-bottom:14px;">
-            <div>📅 <strong>開催:</strong> ${UI.formatDateTime(ev.startDateTime)}</div>
-            <div>📍 <strong>場所:</strong> ${sanitize(ev.location || '未設定')}</div>
-            <div>⏰ <strong>締切:</strong> ${UI.formatDateTime(ev.deadlineDateTime)}</div>
+          <div style="background:var(--bg-primary); padding:12px; border-radius:var(--radius-md); font-size:13px; margin-bottom:14px; border: 1px solid #edf2f7;">
+            <div style="margin-bottom:4px;">📅 <strong>開催:</strong> ${UI.formatDateTimeShort(ev.startDateTime)}</div>
+            <div style="margin-bottom:4px;">📍 <strong>場所:</strong> ${sanitize(ev.location || '未設定')}</div>
+            <div>⏰ <strong>締切:</strong> ${UI.formatDateTimeShort(ev.deadlineDateTime)}</div>
           </div>
           <h4 style="font-size:14px; font-weight:700; margin-bottom:8px;">出欠状況 (${going.length}名 参加確定)</h4>
-          <div style="background:var(--bg-primary); padding:10px; border-radius:var(--radius-md); max-height:180px; overflow-y:auto;">
+          <div style="background:var(--bg-primary); padding:10px; border-radius:var(--radius-md); max-height:180px; overflow-y:auto; border: 1px solid #edf2f7;">
             ${(ev.attendees || []).map(a => `<div class="attendee-row" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);"><span style="display:flex; align-items:center; gap:6px;">${UI.renderAvatarHtml(a.avatar || '👤', 24)} <span>${sanitize(a.name)}</span></span><span class="attendee-status-badge ${a.status}">${a.status === 'going' ? '✅ 参加' : (a.status === 'declined' ? '❌ 不参加' : '🤔 未定')}</span></div>`).join('')}
           </div>
           <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
-            <button class="btn btn-success btn-full" onclick="window.App.syncWithGoogle('${ev.id}')">Googleカレンダーに追加</button>
-            <button class="btn btn-primary btn-full" onclick="window.App.downloadCalendarICS('${ev.id}')">iPhone / Android カレンダー (.ics) をダウンロード</button>
+            <button class="btn btn-success btn-full" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダーに追加</button>
+            <button class="btn btn-primary btn-full" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 iPhone / Android カレンダー (.ics)</button>
           </div>
+          ${deleteBtnHtml}
         `;
           this.openModal('modal-event-detail');
         }
@@ -3596,7 +3602,7 @@
           const ev = StorageManager.getEventById(eventId);
           if (!ev) return;
           const me = StorageManager.getCurrentUser();
-          const isOwner = (ev.createdById === me.id || ev.createdById === 'user_me' || !ev.createdById);
+          const isOwner = (ev.createdById === me.id || ev.createdById === 'user_me' || !ev.createdById || ev.createdByName === me.name || ev.createdByName === 'あなた');
 
           if (!isOwner) {
             alert('❌ この予定は作成者本人のみ削除できます。');
