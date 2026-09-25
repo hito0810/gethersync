@@ -889,26 +889,7 @@ body {
       </div>
     </div>
 
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-icon">⚡</div>
-        <div>
-          <div class="brand-title">AsoBo</div>
-          <div class="brand-subtitle">予定出欠 & カレンダー自動連携</div>
-        </div>
-      </div>
 
-      <div class="header-actions" style="display: flex; align-items: center; gap: 8px;">
-        <div id="sync-status-badge" style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.12); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25);" title="公開サーバーとリアルタイム接続中">
-          <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: inline-block; animation: pulse 2s infinite;"></span>
-          <span id="sync-status-text">リアルタイム同期</span>
-        </div>
-        <div id="current-user-badge" class="user-pill" style="cursor: pointer;" onclick="window.App.openProfileModal()" title="タップして名前やアバターを変更">
-          <span class="user-avatar">🦊</span>
-          <span>あなた</span>
-        </div>
-      </div>
-    </header>
 
     <nav class="nav-tabs">
       <button class="tab-btn active" data-tab="events" id="nav-events-btn">📅 予定一覧</button>
@@ -980,6 +961,10 @@ body {
     <div class="bottom-nav-item active" data-tab="events"><i>📅</i><span>予定</span></div>
     <div class="bottom-nav-item" data-tab="groups"><i>👥</i><span>グループ</span></div>
     <div class="bottom-nav-item" data-tab="friends"><i>👤</i><span>友達</span></div>
+    <div class="bottom-nav-item" id="bottom-nav-profile-item" onclick="window.App.openProfileModal()" title="プロフィール設定">
+      <i id="bottom-nav-user-avatar" style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; font-style:normal; border-radius:50%; overflow:hidden;">🦊</i>
+      <span>マイ設定</span>
+    </div>
   </nav>
 
   <!-- MODALS -->
@@ -2281,6 +2266,10 @@ body {
         const badge = document.getElementById('current-user-badge');
         if (badge) {
           badge.innerHTML = `${UI.renderAvatarHtml(user.avatar || '🦊', 22)} <span>${sanitize(user.name)}</span>`;
+        }
+        const navAvatar = document.getElementById('bottom-nav-user-avatar');
+        if (navAvatar) {
+          navAvatar.innerHTML = UI.renderAvatarHtml(user.avatar || '🦊', 24);
         }
       }
 
