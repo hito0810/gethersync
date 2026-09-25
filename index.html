@@ -1596,20 +1596,6 @@
           </div>
         </div>
 
-        <!-- 📅 スマホカレンダー自動同期設定 -->
-        <div style="background: linear-gradient(135deg, rgba(0,181,108,0.08) 0%, rgba(59,130,246,0.08) 100%); border: 1px solid rgba(0,181,108,0.25); border-radius: var(--radius-md); padding: 14px; margin-top: 14px;">
-          <div style="font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            <span>📅</span> <span>スマホカレンダーと自動同期</span>
-            <span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 999px;">おすすめ</span>
-          </div>
-          <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 10px;">
-            1回タップして購読（照会）登録しておくと、予定の作成はもちろん、<strong>アプリで予定を削除・変更した際もスマホカレンダーから自動で消去・更新</strong>されます！
-          </p>
-          <button type="button" class="btn btn-primary btn-full btn-sm" onclick="window.App.subscribeCalendarFeed()">
-            ⚡ スマホカレンダーと自動同期する
-          </button>
-        </div>
-
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
           <button type="button" class="btn btn-secondary" onclick="window.App.closeModal('modal-profile')">閉じる</button>
           <button type="submit" class="btn btn-primary">プロフィールを保存</button>
@@ -1629,78 +1615,31 @@
       };
 
       const CalendarHelper = {
-        formatToLocalICSDate(dateStr) {
-          if (!dateStr) return '';
-          const d = new Date(dateStr);
-          const jstDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+        formatToICSDate(dateStr) {
+          const date = new Date(dateStr);
           const pad = (n) => String(n).padStart(2, '0');
-          return (
-            jstDate.getFullYear() +
-            pad(jstDate.getMonth() + 1) +
-            pad(jstDate.getDate()) +
-            'T' +
-            pad(jstDate.getHours()) +
-            pad(jstDate.getMinutes()) +
-            pad(jstDate.getSeconds())
-          );
-        },
-        getEventUID(eventId) {
-          return 'asobo-event-' + eventId + '@asobo.app';
+          return date.getUTCFullYear() + pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) + 'T' + pad(date.getUTCHours()) + pad(date.getUTCMinutes()) + pad(date.getUTCSeconds()) + 'Z';
         },
         generateICSContent(event) {
-          const uid = this.getEventUID(event.id);
-          const dtStamp = this.formatToLocalICSDate(new Date().toISOString());
-          const dtStart = this.formatToLocalICSDate(event.startDateTime);
+          const uid = 'gathersync-' + event.id + '-' + Date.now() + '@gathersync.app';
+          const dtStamp = this.formatToICSDate(new Date().toISOString());
+          const dtStart = this.formatToICSDate(event.startDateTime);
           let endDateTime = event.endDateTime;
           if (!endDateTime) {
             const end = new Date(event.startDateTime);
             end.setHours(end.getHours() + 2);
             endDateTime = end.toISOString();
           }
-          const dtEnd = this.formatToLocalICSDate(endDateTime);
-          const summary = (event.title || '').replace(/[\r\n]/g, ' ');
+          const dtEnd = this.formatToICSDate(endDateTime);
+          const summary = event.title.replace(/[\r\n]/g, ' ');
           const description = (event.description || '').replace(/[\r\n]/g, '\\n');
           const location = (event.location || '').replace(/[\r\n]/g, ' ');
 
           return [
-            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AsoBo//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-            'X-WR-CALNAME:AsoBo 予定カレンダー', 'X-WR-TIMEZONE:Asia/Tokyo',
-            'BEGIN:VTIMEZONE', 'TZID:Asia/Tokyo',
-            'BEGIN:STANDARD', 'DTSTART:19700101T000000', 'TZOFFSETFROM:+0900', 'TZOFFSETTO:+0900', 'TZNAME:JST', 'END:STANDARD',
-            'END:VTIMEZONE',
-            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:0',
-            'DTSTAMP;TZID=Asia/Tokyo:' + dtStamp,
-            'DTSTART;TZID=Asia/Tokyo:' + dtStart,
-            'DTEND;TZID=Asia/Tokyo:' + dtEnd,
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//GatherSync//JA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+            'BEGIN:VEVENT', 'UID:' + uid, 'DTSTAMP:' + dtStamp, 'DTSTART:' + dtStart, 'DTEND:' + dtEnd,
             'SUMMARY:' + summary, 'DESCRIPTION:' + description, location ? 'LOCATION:' + location : '',
             'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR'
-          ].filter(Boolean).join('\r\n');
-        },
-        generateCancelICSContent(event) {
-          const uid = this.getEventUID(event.id);
-          const dtStamp = this.formatToLocalICSDate(new Date().toISOString());
-          const dtStart = this.formatToLocalICSDate(event.startDateTime || new Date().toISOString());
-          let endDateTime = event.endDateTime;
-          if (!endDateTime) {
-            const end = new Date(event.startDateTime || new Date());
-            end.setHours(end.getHours() + 2);
-            endDateTime = end.toISOString();
-          }
-          const dtEnd = this.formatToLocalICSDate(endDateTime);
-          const summary = (event.title || '').replace(/[\r\n]/g, ' ');
-
-          return [
-            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AsoBo//JA', 'CALSCALE:GREGORIAN', 'METHOD:CANCEL',
-            'X-WR-CALNAME:AsoBo 予定カレンダー', 'X-WR-TIMEZONE:Asia/Tokyo',
-            'BEGIN:VTIMEZONE', 'TZID:Asia/Tokyo',
-            'BEGIN:STANDARD', 'DTSTART:19700101T000000', 'TZOFFSETFROM:+0900', 'TZOFFSETTO:+0900', 'TZNAME:JST', 'END:STANDARD',
-            'END:VTIMEZONE',
-            'BEGIN:VEVENT', 'UID:' + uid, 'SEQUENCE:1',
-            'DTSTAMP;TZID=Asia/Tokyo:' + dtStamp,
-            'DTSTART;TZID=Asia/Tokyo:' + dtStart,
-            'DTEND;TZID=Asia/Tokyo:' + dtEnd,
-            'SUMMARY:【中止】' + summary, 'DESCRIPTION:この予定はAsoBo上で削除されました。',
-            'STATUS:CANCELLED', 'END:VEVENT', 'END:VCALENDAR'
           ].filter(Boolean).join('\r\n');
         },
         downloadICS(event) {
@@ -1708,37 +1647,22 @@
           const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
           const link = document.createElement('a');
           link.href = window.URL.createObjectURL(blob);
-          link.setAttribute('download', (event.title || 'event') + '_AsoBo.ics');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        },
-        downloadCancelICS(event) {
-          const icsData = this.generateCancelICSContent(event);
-          const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
-          const link = document.createElement('a');
-          link.href = window.URL.createObjectURL(blob);
-          link.setAttribute('download', 'キャンセル_' + (event.title || 'event') + '_AsoBo.ics');
+          link.setAttribute('download', event.title + '_AsoBo.ics');
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
         },
         getGoogleCalendarURL(event) {
-          const startStr = this.formatToLocalICSDate(event.startDateTime);
+          const startStr = this.formatToICSDate(event.startDateTime);
           let endDateTime = event.endDateTime;
           if (!endDateTime) {
             const end = new Date(event.startDateTime);
             end.setHours(end.getHours() + 2);
             endDateTime = end.toISOString();
           }
-          const endStr = this.formatToLocalICSDate(endDateTime);
+          const endStr = this.formatToICSDate(endDateTime);
           const params = new URLSearchParams({
-            action: 'TEMPLATE',
-            text: event.title,
-            dates: startStr + '/' + endStr,
-            ctz: 'Asia/Tokyo',
-            details: event.description || '',
-            location: event.location || ''
+            action: 'TEMPLATE', text: event.title, dates: startStr + '/' + endStr, details: event.description || '', location: event.location || ''
           });
           return 'https://calendar.google.com/calendar/render?' + params.toString();
         }
@@ -3442,6 +3366,11 @@
           if (ev) window.open(CalendarHelper.getGoogleCalendarURL(ev), '_blank');
         }
 
+        downloadCalendarICS(id) {
+          const ev = StorageManager.getEventById(id);
+          if (ev) { CalendarHelper.downloadICS(ev); this.showToast('📥 カレンダーファイル(.ics)をダウンロードしました！'); }
+        }
+
         openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
         closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); }
 
@@ -3661,40 +3590,12 @@
             ${(ev.attendees || []).map(a => `<div class="attendee-row" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);"><span style="display:flex; align-items:center; gap:6px;">${UI.renderAvatarHtml(a.avatar || '👤', 24)} <span>${sanitize(a.name)}</span></span><span class="attendee-status-badge ${a.status}">${a.status === 'going' ? '✅ 参加' : (a.status === 'declined' ? '❌ 不参加' : '🤔 未定')}</span></div>`).join('')}
           </div>
           <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
-            <button class="btn btn-primary btn-full" onclick="window.App.subscribeCalendarFeed()">
-              ⚡ カレンダー自動同期（予定削除・変更も自動連動）
-            </button>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 単発カレンダー登録 (.ics)</button>
-              <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダー</button>
-            </div>
+            <button class="btn btn-success btn-full" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダーに追加</button>
+            <button class="btn btn-primary btn-full" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 iPhone / Android カレンダー (.ics)</button>
           </div>
           ${deleteBtnHtml}
         `;
           this.openModal('modal-event-detail');
-        }
-
-        subscribeCalendarFeed() {
-          const me = StorageManager.getCurrentUser();
-          if (!me || !me.id) return;
-
-          const host = window.location.host;
-          const origin = window.location.origin;
-          const webcalUrl = `webcal://${host}/api/calendar/subscribe?userId=${encodeURIComponent(me.id)}`;
-          const httpsUrl = `${origin}/api/calendar/subscribe?userId=${encodeURIComponent(me.id)}`;
-
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-          if (isIOS) {
-            // iOSではwebcalプロトコルで開くとiPhoneカレンダー照会（購読）ダイアログが直接発火
-            window.location.href = webcalUrl;
-            this.showToast('📅 iPhoneカレンダーの自動同期を開きます（「照会」をタップしてください）');
-          } else {
-            // Googleカレンダーや他端末向け
-            const googleSubUrl = `https://calendar.google.com/calendar/r/settings/addbyurl?url=${encodeURIComponent(httpsUrl)}`;
-            window.open(googleSubUrl, '_blank');
-            this.showToast('📅 Googleカレンダーの自動同期画面を開きました');
-          }
         }
 
         async handleDeleteEvent(eventId, eventTitle) {
@@ -3708,12 +3609,9 @@
             return;
           }
 
-          if (!confirm(`予定「${eventTitle}」を削除しますか？\n\n※削除すると全員の画面から消去され、カレンダー登録済みの方向けにカレンダー削除ファイル(.ics)が発行されます。`)) {
+          if (!confirm(`予定「${eventTitle}」を削除しますか？\n※削除すると全員の画面から予定が消去されます。`)) {
             return;
           }
-
-          // カレンダー削除用データを退避
-          const evCopy = { ...ev };
 
           const res = await StorageManager.deleteEvent(eventId, me.id);
           if (res && res.success === false) {
@@ -3723,29 +3621,7 @@
 
           this.closeModal('modal-event-detail');
           this.showToast(`🗑️ 「${eventTitle}」を削除しました`);
-          
-          // 📲 カレンダーからも自動削除・キャンセルするための.icsを発行
-          try {
-            CalendarHelper.downloadCancelICS(evCopy);
-          } catch (e) { }
-
           this.renderAll();
-        }
-
-        downloadCalendarICS(id) {
-          const ev = StorageManager.getEventById(id);
-          if (ev) {
-            CalendarHelper.downloadICS(ev);
-            this.showToast('📥 カレンダーに追加しました（削除時もカレンダー連動します）');
-          }
-        }
-
-        downloadCancelCalendarICS(id) {
-          const ev = StorageManager.getEventById(id);
-          if (ev) {
-            CalendarHelper.downloadCancelICS(ev);
-            this.showToast('🗑️ カレンダーから予定を削除しました');
-          }
         }
 
         showToast(msg) {
