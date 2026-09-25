@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>GatherSync - 友達グループ出欠＆スマホカレンダー自動連携アプリ</title>
-  <meta name="description" content="友達を誘ってグループ分け、出欠確認から締切時のスマホカレンダー自動登録までを一元化するスマートイベント管理Webアプリ">
+  <title>AsoBo - 友達グループ出欠＆スマホカレンダー自動連携アプリ</title>
+  <meta name="description" content="友達を誘ってグループ分け、出欠確認から締切時のスマホカレンダー自動登録までを一元化するスマートイベント管理Webアプリ「AsoBo」">
   <meta name="theme-color" content="#6366f1">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><circle cx='50' cy='50' r='30' fill='white'/></svg>">
@@ -893,7 +893,7 @@ body {
       <div class="brand">
         <div class="brand-icon">⚡</div>
         <div>
-          <div class="brand-title">GatherSync</div>
+          <div class="brand-title">AsoBo</div>
           <div class="brand-subtitle">予定出欠 & カレンダー自動連携</div>
         </div>
       </div>
@@ -1412,7 +1412,7 @@ body {
         const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
-        link.setAttribute('download', event.title + '_GatherSync.ics');
+        link.setAttribute('download', event.title + '_AsoBo.ics');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -2417,7 +2417,7 @@ body {
         const urlInput = document.getElementById('friend-invite-url-input');
         const url = urlInput ? urlInput.value : window.location.href;
         const user = StorageManager.getCurrentUser();
-        const fullMessage = `【GatherSync】${user.name}から友達招待が届きました！\n予定の出欠＆カレンダー連携で繋がろう✨\n${url}`;
+        const fullMessage = `【AsoBo】${user.name}から友達招待が届きました！\n予定の出欠＆カレンダー連携で繋がろう✨\n${url}`;
         
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(fullMessage).then(() => {
@@ -2433,7 +2433,7 @@ body {
       shareFriendInviteViaLine() {
         const url = document.getElementById('friend-invite-url-input').value;
         const user = StorageManager.getCurrentUser();
-        const text = encodeURIComponent(`【GatherSync】${user.name}から友達招待が届きました！予定の出欠＆カレンダー連携しよう✨\n${url}`);
+        const text = encodeURIComponent(`【AsoBo】${user.name}から友達招待が届きました！予定の出欠＆カレンダー連携しよう✨\n${url}`);
         window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
       }
 
@@ -2466,7 +2466,7 @@ body {
         const url = input ? input.value : window.location.href;
         const titleElem = document.getElementById('share-event-title');
         const title = titleElem ? titleElem.textContent : '予定の出欠確認';
-        const text = encodeURIComponent(`【GatherSync】${title}\n${url}`);
+        const text = encodeURIComponent(`【AsoBo】${title}\n${url}`);
         window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
       }
 

@@ -1,7 +1,7 @@
 {
-  "name": "gathersync",
+  "name": "asobo",
   "version": "1.0.0",
-  "description": "GatherSync - Real-Time Group RSVP & Calendar Sync Server",
+  "description": "AsoBo - Real-Time Group RSVP & Calendar Sync Server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

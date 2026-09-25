@@ -1,7 +1,7 @@
 {
-  "name": "GatherSync - 友達グループ出欠＆カレンダー連携",
-  "short_name": "GatherSync",
-  "description": "友達を誘ってグループ分け、出欠確認から締切時のスマホカレンダー自動登録までを一元化するスマートイベント管理アプリ",
+  "name": "AsoBo - 友達グループ出欠＆カレンダー自動連携",
+  "short_name": "AsoBo",
+  "description": "友達を誘ってグループ分け、出欠確認から締切時のスマホカレンダー自動登録までを一元化するスマートイベント管理アプリ「AsoBo」",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
