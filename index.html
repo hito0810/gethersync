@@ -1919,6 +1919,53 @@ body {
         ServerApi.submitRSVP(eventId, userId, me.name, me.avatar, status, comment).catch(() => {});
       },
 
+      // --- スマートマージ（サーバーとローカルを安全に統合し、ローカルデータを勝手に消さない） ---
+      mergeFriends(serverFriends) {
+        if (!Array.isArray(serverFriends) || serverFriends.length === 0) return;
+        const local = this.getFriends();
+        const me = this.getCurrentUser();
+        serverFriends.forEach(sf => {
+          if (!sf || !sf.id || sf.id === me.id) return;
+          const idx = local.findIndex(lf => lf.id === sf.id);
+          if (idx >= 0) {
+            local[idx] = { ...local[idx], ...sf };
+          } else {
+            local.push(sf);
+          }
+        });
+        this.saveFriends(local);
+      },
+
+      mergeGroups(serverGroups) {
+        if (!Array.isArray(serverGroups) || serverGroups.length === 0) return;
+        const local = this.getGroups();
+        serverGroups.forEach(sg => {
+          if (!sg || !sg.id) return;
+          const idx = local.findIndex(lg => lg.id === sg.id);
+          if (idx >= 0) {
+            local[idx] = { ...local[idx], ...sg };
+          } else {
+            local.unshift(sg);
+          }
+        });
+        this.saveGroups(local);
+      },
+
+      mergeEvents(serverEvents) {
+        if (!Array.isArray(serverEvents) || serverEvents.length === 0) return;
+        const local = this.getEvents();
+        serverEvents.forEach(se => {
+          if (!se || !se.id) return;
+          const idx = local.findIndex(le => le.id === se.id);
+          if (idx >= 0) {
+            local[idx] = { ...local[idx], ...se };
+          } else {
+            local.unshift(se);
+          }
+        });
+        this.saveEvents(local);
+      },
+
       // --- 通知 ---
       getNotifications() { return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]'); },
       addNotification(n) {
@@ -2123,29 +2170,33 @@ body {
         const data = await ServerApi.syncGet(me.id);
         if (!data) return;
 
-        const currentHash = JSON.stringify({
-          friends: (data.friends || []).map(f => ({ id: f.id, name: f.name })),
-          groups: (data.groups || []).map(g => ({ id: g.id, name: g.name, members: g.memberIds })),
-          events: (data.events || []).map(e => ({ id: e.id, title: e.title, att: (e.attendees || []).map(a => a.status) }))
-        });
+        // 🛡️ サーバーから受信したデータをスマートマージ（ローカルデータを空上書きで消去しない）
+        let updated = false;
+        if (Array.isArray(data.friends) && data.friends.length > 0) {
+          StorageManager.mergeFriends(data.friends);
+          updated = true;
+        }
+        if (Array.isArray(data.groups) && data.groups.length > 0) {
+          StorageManager.mergeGroups(data.groups);
+          updated = true;
+        }
+        if (Array.isArray(data.events) && data.events.length > 0) {
+          StorageManager.mergeEvents(data.events);
+          updated = true;
+        }
 
-        if (currentHash !== this.lastDataHash) {
-          this.lastDataHash = currentHash;
+        // ローカルにデータが存在するのにサーバー側が空の場合は、ローカルデータをサーバーへプッシュして同期
+        const localEvents = StorageManager.getEvents();
+        const localGroups = StorageManager.getGroups();
+        if ((!data.events || data.events.length === 0) && (localEvents.length > 0 || localGroups.length > 0)) {
+          StorageManager.pushAllToServer();
+        }
 
-          if (Array.isArray(data.friends)) {
-            StorageManager.saveFriends(data.friends);
-          }
-          if (Array.isArray(data.groups)) {
-            StorageManager.saveGroups(data.groups);
-          }
-          if (Array.isArray(data.events)) {
-            StorageManager.saveEvents(data.events);
-          }
-
+        if (updated) {
           this.renderAll();
-          if (!silent) {
-            this.updateSyncBadge(true);
-          }
+        }
+        if (!silent) {
+          this.updateSyncBadge(true);
         }
       }
 

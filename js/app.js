@@ -59,17 +59,27 @@ class AppController {
     const data = await ServerApi.syncGet(me.id);
     if (!data) return;
 
-    const currentHash = JSON.stringify({
-      friends: (data.friends || []).map(f => ({ id: f.id, name: f.name })),
-      groups: (data.groups || []).map(g => ({ id: g.id, name: g.name, members: g.memberIds })),
-      events: (data.events || []).map(e => ({ id: e.id, title: e.title, att: (e.attendees || []).map(a => a.status) }))
-    });
+    let updated = false;
+    if (Array.isArray(data.friends) && data.friends.length > 0) {
+      StorageManager.mergeFriends(data.friends);
+      updated = true;
+    }
+    if (Array.isArray(data.groups) && data.groups.length > 0) {
+      StorageManager.mergeGroups(data.groups);
+      updated = true;
+    }
+    if (Array.isArray(data.events) && data.events.length > 0) {
+      StorageManager.mergeEvents(data.events);
+      updated = true;
+    }
 
-    if (currentHash !== this.lastDataHash) {
-      this.lastDataHash = currentHash;
-      if (Array.isArray(data.friends)) StorageManager.saveFriends(data.friends);
-      if (Array.isArray(data.groups)) StorageManager.saveGroups(data.groups);
-      if (Array.isArray(data.events)) StorageManager.saveEvents(data.events);
+    const localEvents = StorageManager.getEvents();
+    const localGroups = StorageManager.getGroups();
+    if ((!data.events || data.events.length === 0) && (localEvents.length > 0 || localGroups.length > 0)) {
+      StorageManager.pushAllToServer();
+    }
+
+    if (updated) {
       this.renderAll();
     }
   }

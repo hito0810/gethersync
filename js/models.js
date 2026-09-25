@@ -477,6 +477,53 @@ export class StorageManager {
     ServerApi.deleteEvent(eventId).catch(() => {});
   }
 
+  // --- スマートマージ（サーバーとローカルを安全に統合し、ローカルデータを勝手に消さない） ---
+  static mergeFriends(serverFriends) {
+    if (!Array.isArray(serverFriends) || serverFriends.length === 0) return;
+    const local = this.getFriends();
+    const me = this.getCurrentUser();
+    serverFriends.forEach(sf => {
+      if (!sf || !sf.id || sf.id === me.id) return;
+      const idx = local.findIndex(lf => lf.id === sf.id);
+      if (idx >= 0) {
+        local[idx] = { ...local[idx], ...sf };
+      } else {
+        local.push(sf);
+      }
+    });
+    this.saveFriends(local);
+  }
+
+  static mergeGroups(serverGroups) {
+    if (!Array.isArray(serverGroups) || serverGroups.length === 0) return;
+    const local = this.getGroups();
+    serverGroups.forEach(sg => {
+      if (!sg || !sg.id) return;
+      const idx = local.findIndex(lg => lg.id === sg.id);
+      if (idx >= 0) {
+        local[idx] = { ...local[idx], ...sg };
+      } else {
+        local.unshift(sg);
+      }
+    });
+    this.saveGroups(local);
+  }
+
+  static mergeEvents(serverEvents) {
+    if (!Array.isArray(serverEvents) || serverEvents.length === 0) return;
+    const local = this.getEvents();
+    serverEvents.forEach(se => {
+      if (!se || !se.id) return;
+      const idx = local.findIndex(le => le.id === se.id);
+      if (idx >= 0) {
+        local[idx] = { ...local[idx], ...se };
+      } else {
+        local.unshift(se);
+      }
+    });
+    this.saveEvents(local);
+  }
+
   // --- Notifications ---
   static getNotifications() {
     return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
