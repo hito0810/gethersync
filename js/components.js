@@ -119,7 +119,7 @@ export const UI = {
         <!-- 参加者アバタースタック -->
         <div class="attendees-preview">
           <div class="avatar-stack">
-            ${goingList.slice(0, 5).map(a => `<div class="avatar-pill" title="${a.name}">${a.avatar || '👤'}</div>`).join('')}
+            ${goingList.slice(0, 5).map(a => `<div class="avatar-pill" title="${a.name}">${this.renderAvatarHtml(a.avatar, 24)}</div>`).join('')}
             ${goingList.length > 5 ? `<div class="avatar-pill" style="font-size: 10px; font-weight:700;">+${goingList.length - 5}</div>` : ''}
           </div>
           <div>
@@ -131,11 +131,6 @@ export const UI = {
         <div class="rsvp-section">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">あなたの回答状況:</span>
-            ${!isDeadlinePassed ? `
-              <button class="btn btn-secondary btn-sm" onclick="window.App.simulateDeadline('${event.id}')" title="開発/デモ用: 締切状態をシミュレーション">
-                ⚡ 締切をシミュレーション
-              </button>
-            ` : ''}
           </div>
 
           <div class="rsvp-buttons">
@@ -228,7 +223,7 @@ export const UI = {
             <div style="display: flex; flex-wrap: wrap; gap: 6px;">
               ${members.map(m => `
                 <span class="group-tag">
-                  ${m.avatar} ${m.name}
+                  ${this.renderAvatarHtml(m.avatar, 18)} ${m.name}
                 </span>
               `).join('')}
               ${members.length === 0 ? '<span style="font-size: 12px; color: var(--text-muted);">メンバーがいません</span>' : ''}

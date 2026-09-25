@@ -2043,7 +2043,6 @@ body {
             <div class="rsvp-section">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">あなたの回答:</span>
-                ${!isDeadlinePassed ? `<button class="btn btn-secondary btn-sm" onclick="window.App.simulateDeadline('${event.id}')">⚡ 締切テスト</button>` : ''}
               </div>
               <div class="rsvp-buttons">
                 <button class="btn-rsvp ${myStatus === 'going' ? 'active-going' : ''}" onclick="window.App.submitRSVP('${event.id}', 'going')">✅ 参加</button>
@@ -2737,8 +2736,8 @@ body {
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-primary); border-radius: var(--radius-md);">
                   <span style="font-size: 11px; color: var(--text-secondary);">メンバー:</span>
                   <div class="avatar-stack">
-                    <div class="avatar-pill" title="${sanitize(me.name)} (あなた)">${me.avatar || '🦊'}</div>
-                    ${otherMembers.slice(0, 4).map(f => `<div class="avatar-pill" title="${sanitize(f.name)}">${f.avatar || '😊'}</div>`).join('')}
+                    <div class="avatar-pill" title="${sanitize(me.name)} (あなた)">${UI.renderAvatarHtml(me.avatar || '🦊', 24)}</div>
+                    ${otherMembers.slice(0, 4).map(f => `<div class="avatar-pill" title="${sanitize(f.name)}">${UI.renderAvatarHtml(f.avatar || '😊', 24)}</div>`).join('')}
                     ${otherMembers.length > 4 ? `<div class="avatar-pill" style="font-size: 10px; font-weight: 700;">+${otherMembers.length - 4}</div>` : ''}
                   </div>
                 </div>
