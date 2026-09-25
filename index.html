@@ -37,69 +37,60 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <style>
-    /* GatherSync Clean iOS / LINE Style Stylesheet */
-    :root {
-      --bg-primary: #f6f8fb;
-      --bg-secondary: #ffffff;
-      --bg-tertiary: #edf2f7;
-      --bg-card: #ffffff;
-      --bg-card-hover: #f8fafc;
-      --bg-glass: rgba(255, 255, 255, 0.88);
+  <!-- Google Fonts: Plus Jakarta Sans & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-      --text-primary: #1e293b;
+  <style>
+    /* GatherSync Modern Mint Clean Theme (iOS / LINE Inspired) */
+    :root {
+      --bg-gradient-top: #eaf6f4;
+      --bg-gradient-bottom: #f8fafc;
+      --bg-primary: #f5f8fa;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-card-hover: #fafcfb;
+      --bg-glass: rgba(255, 255, 255, 0.94);
+
+      --text-primary: #192734;
       --text-secondary: #64748b;
       --text-muted: #94a3b8;
 
-      --primary: #06c755;
-      --primary-hover: #05b34c;
-      --primary-light: rgba(6, 199, 85, 0.12);
-      --primary-gradient: linear-gradient(135deg, #06c755 0%, #10b981 100%);
-      --primary-glow: 0 4px 16px rgba(6, 199, 85, 0.25);
+      --primary: #00B56C;
+      --primary-hover: #009e5e;
+      --primary-light: #e6f8f0;
+      --primary-border: rgba(0, 181, 108, 0.25);
+      --primary-gradient: linear-gradient(135deg, #00B56C 0%, #00C87A 100%);
+      --primary-glow: 0 4px 14px rgba(0, 181, 108, 0.25);
 
       --accent: #3b82f6;
-      --accent-light: rgba(59, 130, 246, 0.12);
-      --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      --accent-light: #eff6ff;
 
       --success: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
 
-      --border-color: rgba(0, 0, 0, 0.08);
-      --border-hover: rgba(0, 0, 0, 0.14);
+      --pink-badge-bg: #fff1f2;
+      --pink-badge-text: #e11d48;
 
-      --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
+      --border-color: #edf2f7;
+      --border-soft: #f1f5f9;
+
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
       --radius-full: 9999px;
 
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-      --shadow-md: 0 6px 20px -2px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 14px 34px -4px rgba(0, 0, 0, 0.09);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
+      --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+      --shadow-hover: 0 14px 30px -4px rgba(0, 0, 0, 0.09);
+      --shadow-bottom-nav: 0 -4px 20px rgba(0, 0, 0, 0.05);
 
-      --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Segoe UI', Roboto, sans-serif;
-      --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      --font-sans: 'Plus Jakarta Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+      --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
       --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    [data-theme="dark"] {
-      --bg-primary: #0b0f19;
-      --bg-secondary: #111827;
-      --bg-tertiary: #1e293b;
-      --bg-card: rgba(30, 41, 59, 0.85);
-      --bg-card-hover: rgba(51, 65, 85, 0.95);
-      --bg-glass: rgba(17, 24, 39, 0.85);
-
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-
-      --border-color: rgba(255, 255, 255, 0.09);
-      --border-hover: rgba(255, 255, 255, 0.18);
-
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
     }
 
     * {
@@ -110,8 +101,7 @@
       touch-action: manipulation;
     }
 
-    html,
-    body {
+    html, body {
       touch-action: pan-x pan-y;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
@@ -122,200 +112,649 @@
       background-color: var(--bg-primary);
       color: var(--text-primary);
       min-height: 100vh;
-      line-height: 1.6;
+      line-height: 1.5;
       overflow-x: hidden;
-      background-image:
-        radial-gradient(at 0% 0%, rgba(6, 199, 85, 0.06) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.06) 0px, transparent 50%);
+      background: linear-gradient(180deg, #e4f5ee 0%, #f1f8f6 180px, #f6f9fb 450px, #f8fafc 100%);
       background-attachment: fixed;
     }
 
     .app-container {
-      max-width: 900px;
+      max-width: 540px;
       margin: 0 auto;
-      padding: 16px 16px 100px 16px;
+      padding: 20px 18px 120px 18px;
       min-height: 100vh;
       position: relative;
     }
 
-    .app-header {
+    /* === Top Hero Header (Screenshot matching) === */
+    .top-hero-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 12px 18px;
-      background: var(--bg-glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-sm);
-      position: sticky;
-      top: 12px;
-      z-index: 100;
+      align-items: flex-start;
+      margin-bottom: 22px;
+      padding-top: 6px;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .brand-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 11px;
-      background: var(--primary-gradient);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 20px;
-      box-shadow: var(--primary-glow);
-    }
-
-    .brand-title {
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: -0.4px;
+    .top-hero-title {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
       color: var(--text-primary);
     }
 
-    .brand-subtitle {
-      font-size: 11px;
-      color: var(--text-secondary);
+    .top-hero-title .highlight {
+      color: var(--primary);
+    }
+
+    .top-hero-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
       font-weight: 500;
     }
 
-    .header-actions {
+    .top-hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .top-icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      position: relative;
+      font-size: 20px;
+      transition: var(--transition-fast);
+    }
+
+    .top-icon-btn:active {
+      transform: scale(0.94);
+    }
+
+    .unread-badge-dot {
+      position: absolute;
+      top: 10px;
+      right: 11px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 2px solid #ffffff;
+    }
+
+    .top-avatar-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #fde68a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      overflow: hidden;
+      transition: var(--transition-fast);
+    }
+
+    .top-avatar-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* === Quick Action Row (3 Pill Buttons) === */
+    .quick-actions-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .btn-quick-primary {
+      flex: 1.3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 13px 14px;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-full);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 181, 108, 0.32);
+      transition: var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-quick-primary:active {
+      transform: scale(0.96);
+      background: var(--primary-hover);
+    }
+
+    .btn-quick-secondary {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 13px 12px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-quick-secondary:active {
+      transform: scale(0.96);
+      background: #f8fafc;
+    }
+
+    /* === Section Headings with "すべて見る >" === */
+    .section-head-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .section-head-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1e293b;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .btn-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: var(--radius-full);
-      border: 1px solid var(--border-color);
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: var(--transition-fast);
-      position: relative;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-icon:active {
-      transform: scale(0.94);
-    }
-
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px 4px 6px;
-      background: var(--primary-light);
-      border: 1px solid rgba(6, 199, 85, 0.25);
-      border-radius: var(--radius-full);
+    .section-see-all {
       font-size: 13px;
       font-weight: 700;
-      color: var(--text-primary);
-      transition: var(--transition-fast);
-    }
-
-    .user-pill:active {
-      transform: scale(0.96);
-    }
-
-    .nav-tabs {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      background: var(--bg-tertiary);
-      padding: 4px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-color);
-      margin-bottom: 20px;
-    }
-
-    .tab-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px 12px;
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 600;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: var(--transition-fast);
-    }
-
-    .tab-btn.active {
-      background: var(--bg-secondary);
       color: var(--primary);
-      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+
+    /* === Section 1: Today's Featured Card === */
+    .today-feature-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 30px;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .today-card-top {
+      display: flex;
+      gap: 14px;
+      align-items: stretch;
+      cursor: pointer;
+    }
+
+    .event-thumb-square {
+      width: 96px;
+      height: 96px;
+      border-radius: 16px;
+      object-fit: cover;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
       box-shadow: var(--shadow-sm);
     }
 
+    .today-card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
+    }
+
+    .today-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-pill-subtle {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      display: inline-block;
+    }
+
+    .today-event-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+    }
+
+    .today-event-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .arrow-right-icon {
+      color: #cbd5e1;
+      font-size: 14px;
+      margin-left: 4px;
+    }
+
+    .today-datetime {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .today-bottom-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 6px;
+    }
+
+    .today-avatars-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .avatar-stack-inline {
+      display: flex;
+      align-items: center;
+    }
+
+    .avatar-circle-sm {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      margin-left: -6px;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      overflow: hidden;
+    }
+
+    .avatar-circle-sm:first-child {
+      margin-left: 0;
+    }
+
+    .avatar-count-pill {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 999px;
+      margin-left: 3px;
+    }
+
+    .recruit-text {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .deadline-pink-badge {
+      background: var(--pink-badge-bg);
+      border-radius: 12px;
+      padding: 6px 10px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .deadline-pink-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--pink-badge-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .deadline-pink-time {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--pink-badge-text);
+      line-height: 1.2;
+    }
+
+    /* === Today Card RSVP Action Pill Row === */
+    .today-rsvp-row {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .rsvp-prompt-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .rsvp-btn-group {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .rsvp-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 14px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #64748b;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .rsvp-pill-btn:active {
+      transform: scale(0.95);
+    }
+
+    .rsvp-pill-btn.active-going {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 181, 108, 0.3);
+    }
+
+    .rsvp-pill-btn.active-maybe {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #d97706;
+    }
+
+    .rsvp-pill-btn.active-declined {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #dc2626;
+    }
+
+    /* === Section 2: Friend Invites (2 Column Cards) === */
+    .friend-invites-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .invite-mini-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 110px;
+    }
+
+    .invite-mini-card.theme-mint {
+      background: linear-gradient(145deg, #eef9f5 0%, #ffffff 60%);
+    }
+
+    .invite-mini-card.theme-warm {
+      background: linear-gradient(145deg, #fffbf0 0%, #ffffff 60%);
+    }
+
+    .invite-mini-card:active {
+      transform: scale(0.98);
+    }
+
+    .invite-card-sender {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .sender-avatar-xs {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background: #e2e8f0;
+      border: 1px solid #ffffff;
+    }
+
+    .sender-name-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .invite-event-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .invite-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* === Section 3: Ongoing Events List with Filter Pills === */
+    .filter-pills-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-bottom: 14px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .filter-pills-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-pill-item {
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 700;
+      background: #ffffff;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition-fast);
+    }
+
+    .filter-pill-item.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 181, 108, 0.28);
+    }
+
+    .ongoing-card-item {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .ongoing-card-item:active {
+      transform: scale(0.98);
+    }
+
+    .ongoing-thumb {
+      width: 76px;
+      height: 76px;
+      border-radius: 14px;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+    }
+
+    .ongoing-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ongoing-header-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ongoing-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* === Floating Bottom Nav (iOS / LINE Style) === */
+    .floating-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+      z-index: 100;
+      box-shadow: var(--shadow-bottom-nav);
+    }
+
+    .bottom-tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px 14px;
+      border-radius: 14px;
+      transition: var(--transition-fast);
+      user-select: none;
+    }
+
+    .bottom-tab-icon {
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      transition: var(--transition-fast);
+    }
+
+    .bottom-tab-item.active {
+      color: var(--primary);
+    }
+
+    .bottom-tab-item.active .bottom-tab-icon {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    /* === Views Switching === */
     .view-section {
       display: none;
     }
 
     .view-section.active {
       display: block;
-      animation: fadeIn 0.2s ease-out;
+      animation: fadeIn 0.22s ease-out;
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .hero-banner {
-      background: linear-gradient(135deg, rgba(6, 199, 85, 0.1) 0%, rgba(59, 130, 246, 0.08) 100%);
-      border: 1px solid rgba(6, 199, 85, 0.2);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      margin-bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .hero-content h2 {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 4px;
-      letter-spacing: -0.3px;
-    }
-
-    .hero-content p {
-      color: var(--text-secondary);
-      font-size: 13px;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
+    /* === Generic Modals, Forms & Buttons === */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -336,25 +775,24 @@
     }
 
     .btn-primary {
-      background: var(--primary-gradient);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(6, 199, 85, 0.3);
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(0, 181, 108, 0.3);
     }
 
     .btn-secondary {
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-sm);
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
     }
 
     .btn-success {
-      background: var(--success);
+      background: #10b981;
       color: #fff;
     }
 
     .btn-sm {
-      padding: 6px 12px;
+      padding: 7px 12px;
       font-size: 12px;
       border-radius: var(--radius-sm);
     }
@@ -363,350 +801,17 @@
       width: 100%;
     }
 
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-
-    .section-title {
-      font-size: 17px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-    }
-
-    .filter-pills {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-    }
-
-    .filter-pill {
-      padding: 5px 13px;
+    .btn-icon {
+      width: 36px;
+      height: 36px;
       border-radius: var(--radius-full);
-      font-size: 12px;
-      font-weight: 600;
-      background: var(--bg-secondary);
-      color: var(--text-secondary);
       border: 1px solid var(--border-color);
-      cursor: pointer;
-      transition: var(--transition-fast);
-      white-space: nowrap;
-    }
-
-    .filter-pill.active {
-      background: var(--primary-light);
-      color: var(--primary);
-      border-color: var(--primary);
-      font-weight: 700;
-    }
-
-    .event-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .event-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 18px;
-      transition: var(--transition-normal);
-      box-shadow: var(--shadow-sm);
-      position: relative;
-    }
-
-    .event-card:hover {
-      box-shadow: var(--shadow-md);
-      border-color: var(--border-hover);
-    }
-
-    .event-card.deadline-passed {
-      border-left: 4px solid var(--warning);
-    }
-
-    .event-card.confirmed-going {
-      border-left: 4px solid var(--primary);
-    }
-
-    .event-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .event-badge-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-
-    .category-tag {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
-      background: var(--primary-light);
-      color: var(--primary);
-    }
-
-    .group-tag {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .status-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: var(--radius-full);
-    }
-
-    .status-badge.open {
-      background: rgba(6, 199, 85, 0.12);
-      color: var(--primary);
-    }
-
-    .status-badge.closed {
-      background: rgba(245, 158, 11, 0.15);
-      color: #f59e0b;
-    }
-
-    .event-title {
-      font-size: 17px;
-      font-weight: 800;
+      background: #f8fafc;
       color: var(--text-primary);
-      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      letter-spacing: -0.2px;
-    }
-
-    .event-meta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 6px 14px;
-      margin: 10px 0;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .countdown-box {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px dashed rgba(245, 158, 11, 0.35);
-      border-radius: var(--radius-md);
-      padding: 9px 12px;
-      margin: 10px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-    }
-
-    .countdown-timer {
-      font-weight: 800;
-      color: #d97706;
-    }
-
-    .rsvp-section {
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .rsvp-buttons {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      background: var(--bg-tertiary);
-      padding: 4px;
-      border-radius: var(--radius-md);
-    }
-
-    .btn-rsvp {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      padding: 8px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: var(--transition-fast);
-    }
-
-    .btn-rsvp:active {
-      transform: scale(0.96);
-    }
-
-    .btn-rsvp.active-going {
-      background: var(--bg-secondary);
-      color: #059669;
-      font-weight: 800;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-rsvp.active-declined {
-      background: var(--bg-secondary);
-      color: #dc2626;
-      font-weight: 800;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-rsvp.active-maybe {
-      background: var(--bg-secondary);
-      color: #d97706;
-      font-weight: 800;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .calendar-action-box {
-      background: linear-gradient(135deg, rgba(6, 199, 85, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
-      border: 1px solid rgba(6, 199, 85, 0.25);
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .calendar-action-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 13px;
-      font-weight: 800;
-      color: #059669;
-    }
-
-    .calendar-action-btns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .attendees-preview {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .avatar-stack {
-      display: flex;
-      align-items: center;
-    }
-
-    .avatar-pill {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: var(--bg-tertiary);
-      border: 2px solid var(--bg-secondary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: -6px;
-      font-size: 13px;
-    }
-
-    .avatar-pill:first-child {
-      margin-left: 0;
-    }
-
-    .grid-2col {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 14px;
-    }
-
-    .card-group {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 12px;
-      box-shadow: var(--shadow-sm);
-      transition: var(--transition-fast);
-    }
-
-    .card-group:hover {
-      box-shadow: var(--shadow-md);
-    }
-
-    .group-top {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .group-icon-box {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .friend-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-color);
-      margin-bottom: 8px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .friend-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .friend-avatar-circle {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--bg-tertiary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
     }
 
     .modal-overlay {
@@ -715,7 +820,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(15, 23, 42, 0.45);
+      background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: flex;
@@ -734,14 +839,13 @@
     }
 
     .modal-box {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      background: #ffffff;
       border-radius: var(--radius-lg);
       width: 100%;
-      max-width: 500px;
+      max-width: 480px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--shadow-hover);
       padding: 22px;
     }
 
@@ -755,7 +859,7 @@
     .modal-title {
       font-size: 17px;
       font-weight: 800;
-      letter-spacing: -0.3px;
+      color: #1e293b;
     }
 
     .form-group {
@@ -766,28 +870,26 @@
       display: block;
       font-size: 12px;
       font-weight: 700;
-      color: var(--text-secondary);
-      margin-bottom: 5px;
+      color: #64748b;
+      margin-bottom: 6px;
     }
 
-    .form-input,
-    .form-select,
-    .form-textarea {
+    .form-input, .form-select, .form-textarea {
       width: 100%;
-      padding: 10px 13px;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
+      padding: 11px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: var(--radius-md);
       color: var(--text-primary);
-      font-size: 16px;
+      font-size: 15px;
+      font-family: inherit;
       transition: var(--transition-fast);
     }
 
-    .form-input:focus,
-    .form-select:focus,
-    .form-textarea:focus {
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
       border-color: var(--primary);
+      background: #ffffff;
       box-shadow: 0 0 0 3px var(--primary-light);
     }
 
@@ -808,14 +910,13 @@
       z-index: 9999;
       pointer-events: none;
       width: 90%;
-      max-width: 400px;
+      max-width: 380px;
     }
 
     .toast {
-      background: var(--bg-secondary);
+      background: #ffffff;
       color: var(--text-primary);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--shadow-hover);
       padding: 12px 16px;
       border-radius: var(--radius-md);
       font-size: 13px;
@@ -825,81 +926,6 @@
       gap: 8px;
       pointer-events: auto;
       border-left: 4px solid var(--primary);
-    }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg-glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-around;
-      padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
-      z-index: 99;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
-    }
-
-    .bottom-nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 10px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      transition: var(--transition-fast);
-    }
-
-    .bottom-nav-item.active {
-      color: var(--primary);
-    }
-
-    .bottom-nav-item i {
-      font-size: 20px;
-    }
-
-    .attendee-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 13px;
-    }
-
-    .attendee-status-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
-    }
-
-    .attendee-status-badge.going {
-      background: rgba(6, 199, 85, 0.12);
-      color: #059669;
-    }
-
-    .attendee-status-badge.declined {
-      background: rgba(239, 68, 68, 0.12);
-      color: #dc2626;
-    }
-
-    .attendee-status-badge.maybe {
-      background: rgba(245, 158, 11, 0.12);
-      color: #d97706;
-    }
-
-    .attendee-status-badge.unanswered {
-      background: var(--bg-tertiary);
-      color: var(--text-muted);
     }
 
     #confetti-canvas {
@@ -912,11 +938,70 @@
       z-index: 10000;
     }
 
-    @media (max-width: 640px) {
-      .nav-tabs {
-        display: none;
-      }
+    .card-group {
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 12px;
+    }
 
+    .friend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      margin-bottom: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .attendee-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+    }
+
+    .attendee-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .attendee-status-badge.going {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .attendee-status-badge.declined {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .attendee-status-badge.maybe {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .attendee-status-badge.unanswered {
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 480px) {
+      .app-container {
+        padding: 16px 14px 110px 14px;
+      }
+      .quick-actions-row {
+        flex-direction: row;
+      }
       .form-row {
         grid-template-columns: 1fr;
       }
@@ -952,76 +1037,130 @@
 
 
 
-    <nav class="nav-tabs">
-      <button class="tab-btn active" data-tab="events" id="nav-events-btn">📅 予定一覧</button>
-      <button class="tab-btn" data-tab="groups" id="nav-groups-btn">👥 グループ</button>
-      <button class="tab-btn" data-tab="friends" id="nav-friends-btn">👤 友達一覧</button>
-    </nav>
-
-    <!-- VIEW 1: Events -->
-    <main id="view-events" class="view-section active">
-      <section class="hero-banner">
-        <div class="hero-content">
-          <h2>友達を誘って予定を立てよう ✨</h2>
-          <p>出欠の回答期限になると、参加する人のスマホ（Google / Appleカレンダー）にワンタップで自動同期されます。</p>
+    <!-- 1. Top Hero Header (画像完全準拠) -->
+    <header class="top-hero-header">
+      <div>
+        <h1 class="top-hero-title">みんなの予定を、<br><span class="highlight">ひとつ</span>に。</h1>
+        <p class="top-hero-subtitle">友達を誘って、次の予定を決めよう。</p>
+      </div>
+      <div class="top-hero-actions">
+        <button class="top-icon-btn" onclick="window.App.showNotificationInfo()" title="通知">
+          🔔
+          <span class="unread-badge-dot"></span>
+        </button>
+        <div class="top-avatar-btn" id="top-header-avatar" onclick="window.App.openProfileModal()" title="マイプロフィール">
+          🦊
         </div>
-        <div class="hero-actions">
-          <button class="btn btn-primary" onclick="window.App.openNewEventModal()">＋ 新しい予定を作成する</button>
-          <button class="btn btn-secondary" onclick="window.App.openAddGroupModal()">👥 グループを作成</button>
-          <button class="btn btn-secondary" onclick="window.App.openFriendInviteModal()">🔗 友達を招待する</button>
+      </div>
+    </header>
+
+    <!-- 2. Quick Action 3 Buttons (画像完全準拠) -->
+    <div class="quick-actions-row">
+      <button class="btn-quick-primary" onclick="window.App.openNewEventModal()">
+        <span>＋</span> 予定を作る
+      </button>
+      <button class="btn-quick-secondary" onclick="window.App.openAddGroupModal()">
+        <span>👥</span> グループを作成
+      </button>
+      <button class="btn-quick-secondary" onclick="window.App.openFriendInviteModal()">
+        <span>👤</span> 友達を招待
+      </button>
+    </div>
+
+    <!-- VIEW 1: Events (予定ホーム) -->
+    <main id="view-events" class="view-section active">
+      <!-- Section 1: 📅 今日の予定 -->
+      <section style="margin-bottom: 24px;">
+        <div class="section-head-bar">
+          <div class="section-head-title">
+            <span>📅</span> <span>今日の予定</span>
+          </div>
+          <a class="section-see-all" onclick="window.App.setFilter('all')">
+            すべて見る <span style="font-size: 11px;">❯</span>
+          </a>
+        </div>
+        <div id="today-event-container">
+          <!-- 今日の予定カードが動的レンダリングされます -->
         </div>
       </section>
 
-      <div class="section-header">
-        <h2 class="section-title">📅 進行中の予定</h2>
-        <div class="filter-pills">
-          <button class="filter-pill active" data-filter="all">すべて</button>
-          <button class="filter-pill" data-filter="going">参加予定</button>
-          <button class="filter-pill" data-filter="open">受付中</button>
-          <button class="filter-pill" data-filter="closed">締切済み</button>
+      <!-- Section 2: 📢 友達からのお誘い -->
+      <section style="margin-bottom: 24px;">
+        <div class="section-head-bar">
+          <div class="section-head-title">
+            <span>📢</span> <span>友達からのお誘い</span>
+          </div>
+          <a class="section-see-all" onclick="window.App.openFriendInviteModal()">
+            すべて見る <span style="font-size: 11px;">❯</span>
+          </a>
         </div>
-      </div>
+        <div id="friend-invites-container" class="friend-invites-grid">
+          <!-- 友達からの招待カードが2カラムで動的レンダリングされます -->
+        </div>
+      </section>
 
-      <div id="event-list-container" class="event-list"></div>
+      <!-- Section 3: 🔥 進行中の予定 -->
+      <section>
+        <div class="section-head-bar" style="margin-bottom: 10px;">
+          <div class="section-head-title">
+            <span>🔥</span> <span>進行中の予定</span>
+          </div>
+          <div class="filter-pills-row" style="margin-bottom: 0;">
+            <button class="filter-pill-item active" data-filter="all">すべて</button>
+            <button class="filter-pill-item" data-filter="going">参加予定</button>
+            <button class="filter-pill-item" data-filter="open">受付中</button>
+            <button class="filter-pill-item" data-filter="closed">締切済み</button>
+          </div>
+        </div>
+        <div id="ongoing-events-container">
+          <!-- 進行中の予定一覧が動的レンダリングされます -->
+        </div>
+      </section>
     </main>
 
     <!-- VIEW 2: Groups -->
     <section id="view-groups" class="view-section">
-      <div class="section-header">
+      <div class="section-head-bar">
         <div>
-          <h2 class="section-title">👥 グループ一覧</h2>
+          <h2 class="section-head-title">👥 グループ一覧</h2>
           <p style="font-size: 13px; color: var(--text-secondary);">友達を分けておくと、ワンタップでメンバー全員に予定を案内できます</p>
         </div>
-        <button class="btn btn-primary" onclick="window.App.openAddGroupModal()">＋ グループ作成</button>
+        <button class="btn btn-primary btn-sm" onclick="window.App.openAddGroupModal()">＋ 作成</button>
       </div>
-      <div id="group-list-container" class="grid-2col" style="margin-top: 16px;"></div>
+      <div id="group-list-container" style="margin-top: 14px;"></div>
     </section>
 
     <!-- VIEW 3: Friends -->
     <section id="view-friends" class="view-section">
-      <div class="section-header">
+      <div class="section-head-bar">
         <div>
-          <h2 class="section-title">👤 友達一覧 & 招待</h2>
+          <h2 class="section-head-title">👤 友達一覧 & 招待</h2>
           <p style="font-size: 13px; color: var(--text-secondary);">招待URLやLINEで友達を何人でも招待できます</p>
         </div>
-        <div>
-          <button class="btn btn-primary" onclick="window.App.openFriendInviteModal()">
-            🔗 友達を招待する
-          </button>
-        </div>
+        <button class="btn btn-primary btn-sm" onclick="window.App.openFriendInviteModal()">
+          🔗 招待
+        </button>
       </div>
-      <div id="friend-list-container" style="margin-top: 16px;"></div>
+      <div id="friend-list-container" style="margin-top: 14px;"></div>
     </section>
   </div>
 
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <div class="bottom-nav-item active" data-tab="events"><i>📅</i><span>予定</span></div>
-    <div class="bottom-nav-item" data-tab="groups"><i>👥</i><span>グループ</span></div>
-    <div class="bottom-nav-item" data-tab="friends"><i>👤</i><span>友達</span></div>
-    <div class="bottom-nav-item" id="bottom-nav-profile-item" onclick="window.App.openProfileModal()" title="プロフィール設定">
-      <i id="bottom-nav-user-avatar"
-        style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; font-style:normal; border-radius:50%; overflow:hidden;">🦊</i>
+  <!-- Floating Bottom Navigation (画像完全準拠) -->
+  <nav class="floating-bottom-nav">
+    <div class="bottom-tab-item active" data-tab="events" onclick="window.App.switchTab('events')">
+      <div class="bottom-tab-icon">📅</div>
+      <span>予定</span>
+    </div>
+    <div class="bottom-tab-item" data-tab="groups" onclick="window.App.switchTab('groups')">
+      <div class="bottom-tab-icon">👥</div>
+      <span>グループ</span>
+    </div>
+    <div class="bottom-tab-item" data-tab="friends" onclick="window.App.switchTab('friends')">
+      <div class="bottom-tab-icon">👤</div>
+      <span>友達</span>
+    </div>
+    <div class="bottom-tab-item" id="bottom-nav-profile-item" onclick="window.App.openProfileModal()">
+      <div class="bottom-tab-icon">⚙️</div>
       <span>マイ設定</span>
     </div>
   </nav>
@@ -1577,11 +1716,69 @@
         return prefix + '_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
       };
 
+      const now = new Date();
+      const in2Days = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+      const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const in10Hours = new Date(now.getTime() + 10 * 60 * 60 * 1000);
+
       const INITIAL_DATA = {
-        currentUser: { id: '', name: '自分 (あなた)', avatar: '🦊' },
-        friends: [],
-        groups: [],
-        events: [],
+        currentUser: { id: '', name: 'あなた', avatar: '🦊' },
+        friends: [
+          { id: 'f_takumi', name: 'たくみ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80', note: '大学同期' },
+          { id: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', note: '高校の友達' }
+        ],
+        groups: [
+          { id: 'g_all', name: 'いつもの仲間', icon: '👥', color: '#00B56C', description: '飲み会やBBQのメンバー', memberIds: ['f_takumi', 'f_yuto'] }
+        ],
+        events: [
+          {
+            id: 'evt_camp',
+            title: 'キャンプ',
+            category: 'camp',
+            location: '奥多摩リバーサイドキャンプ場',
+            startDateTime: new Date(now.getTime() + 18 * 60 * 60 * 1000).toISOString(),
+            deadlineDateTime: in10Hours.toISOString(),
+            createdByName: 'たくみ',
+            createdByAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80',
+            thumbUrl: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80',
+            description: '秋の星空キャンプ！防寒着を持ってきてね',
+            attendees: [
+              { friendId: 'f_takumi', name: 'たくみ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80', status: 'going' },
+              { friendId: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'going' }
+            ]
+          },
+          {
+            id: 'evt_drink',
+            title: '飲み会しよー！',
+            category: 'drink',
+            location: '渋谷 居酒屋',
+            startDateTime: in2Days.toISOString(),
+            deadlineDateTime: in2Days.toISOString(),
+            createdByName: 'たくみ',
+            createdByAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80',
+            thumbUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=500&auto=format&fit=crop&q=80',
+            description: '久しぶりにみんなで集まろう！',
+            attendees: [
+              { friendId: 'f_takumi', name: 'たくみ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80', status: 'going' },
+              { friendId: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'going' }
+            ]
+          },
+          {
+            id: 'evt_bbq',
+            title: 'BBQやろうぜ！',
+            category: 'camp',
+            location: '豊洲 BBQ PARK',
+            startDateTime: in3Days.toISOString(),
+            deadlineDateTime: in3Days.toISOString(),
+            createdByName: 'ゆうと',
+            createdByAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+            thumbUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&auto=format&fit=crop&q=80',
+            description: '海沿いで手ぶらBBQ！',
+            attendees: [
+              { friendId: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'going' }
+            ]
+          }
+        ],
         notifications: []
       };
 
@@ -2147,6 +2344,28 @@
       };
 
       const UI = {
+        getEventThumbUrl(event) {
+          if (event.thumbUrl) return event.thumbUrl;
+          const title = (event.title || '').toLowerCase();
+          const cat = event.category || 'other';
+          if (cat === 'camp' || title.includes('キャンプ') || title.includes('アウトドア') || title.includes('テント')) {
+            return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80';
+          }
+          if (cat === 'drink' || title.includes('飲み') || title.includes('酒') || title.includes('居酒屋') || title.includes('バー')) {
+            return 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=500&auto=format&fit=crop&q=80';
+          }
+          if (title.includes('bbq') || title.includes('バーベキュー') || title.includes('肉')) {
+            return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&auto=format&fit=crop&q=80';
+          }
+          if (cat === 'sports' || title.includes('フットサル') || title.includes('サッカー') || title.includes('テニス') || title.includes('ジム')) {
+            return 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=500&auto=format&fit=crop&q=80';
+          }
+          if (cat === 'study' || title.includes('勉強') || title.includes('読書') || title.includes('カフェ') || title.includes('開発')) {
+            return 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500&auto=format&fit=crop&q=80';
+          }
+          return 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=500&auto=format&fit=crop&q=80';
+        },
+
         renderAvatarHtml(avatar, size = 32, extraClass = '', style = '') {
           if (!avatar) avatar = '🦊';
           if (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://')) {
@@ -2154,80 +2373,174 @@
           }
           return `<span class="${extraClass}" style="width:${size}px; height:${size}px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:${Math.round(size * 0.55)}px; flex-shrink:0; ${style}">${avatar}</span>`;
         },
-        formatDateTime(isoStr) {
+
+        formatDateTimeShort(isoStr) {
           if (!isoStr) return '-';
           const d = new Date(isoStr);
-          return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+          const days = ['日', '月', '火', '水', '木', '金', '土'];
+          const month = d.getMonth() + 1;
+          const date = d.getDate();
+          const dayName = days[d.getDay()];
+          const time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+          return `${month}月${date}日 (${dayName}) ${time}`;
         },
+
         getDeadlineRemaining(deadlineStr) {
-          if (!deadlineStr) return { text: '締切なし', isPassed: false };
+          if (!deadlineStr) return { text: '締切なし', shortText: 'なし', isPassed: false };
           const diff = new Date(deadlineStr).getTime() - Date.now();
-          if (diff <= 0) return { text: '締め切られました', isPassed: true };
+          if (diff <= 0) return { text: '締め切られました', shortText: '終了', isPassed: true };
           const h = Math.floor(diff / (1000 * 60 * 60));
-          return { text: '残り ' + (h > 24 ? Math.floor(h / 24) + '日 ' + (h % 24) + '時間' : h + '時間'), isPassed: false };
+          if (h >= 24) {
+            const days = Math.floor(h / 24);
+            const remainH = h % 24;
+            return { text: `残り ${days}日 ${remainH}時間`, shortText: `${days}日`, isPassed: false };
+          }
+          return { text: `残り ${h}時間`, shortText: `${h}時間`, isPassed: false };
         },
+
         getCategoryInfo(cat) {
           const map = { camp: { icon: '⛺', label: 'アウトドア' }, drink: { icon: '🍻', label: '飲み会' }, sports: { icon: '⚽', label: 'スポーツ' }, study: { icon: '💻', label: '勉強' } };
           return map[cat] || { icon: '🎉', label: 'イベント' };
         },
-        renderEventCard(event, currentUser) {
+
+        // 1. 今日の予定（フィーチャーカード）
+        renderTodayCard(event, currentUser) {
+          if (!event) return '';
           const myRsvp = (event.attendees || []).find(a => a.friendId === currentUser.id || a.name === currentUser.name);
           const myStatus = myRsvp ? myRsvp.status : 'unanswered';
-          const isGoing = myStatus === 'going';
           const deadlineInfo = this.getDeadlineRemaining(event.deadlineDateTime);
-          const isDeadlinePassed = event.isDeadlinePassed || deadlineInfo.isPassed;
           const goingList = (event.attendees || []).filter(a => a.status === 'going');
           const catInfo = this.getCategoryInfo(event.category);
-
-          const isOwner = (event.createdById === currentUser.id || event.createdById === 'user_me' || !event.createdById);
-          const creatorName = event.createdByName || '友達';
-          const ownerBadge = isOwner ? '<span class="status-badge" style="background:rgba(99,102,241,0.12); color:var(--primary); border:1px solid rgba(99,102,241,0.25); font-size:11px;">👑 あなたが作成</span>' : `<span class="status-badge" style="background:rgba(100,116,139,0.1); color:var(--text-secondary); border:1px solid rgba(100,116,139,0.2); font-size:11px;">👤 主催: ${sanitize(creatorName)}</span>`;
+          const thumbUrl = this.getEventThumbUrl(event);
+          const recruitCount = Math.max(1, 8 - goingList.length);
 
           return `
-          <div class="event-card ${isDeadlinePassed ? 'deadline-passed' : ''} ${isGoing ? 'confirmed-going' : ''}">
-            <div class="event-card-header">
-              <div>
-                <div class="event-badge-row">
-                  <span class="category-tag">${catInfo.icon} ${catInfo.label}</span>
-                  <span class="group-tag">👥 ${sanitize(event.groupName || '全体')}</span>
-                  ${ownerBadge}
+          <div class="today-feature-card">
+            <div class="today-card-top" onclick="window.App.openEventDetail('${event.id}')">
+              <div class="event-thumb-square" style="background-image: url('${thumbUrl}');"></div>
+              <div class="today-card-info">
+                <div>
+                  <div class="today-info-header">
+                    <span class="status-pill-subtle">進行中</span>
+                    <span class="arrow-right-icon">❯</span>
+                  </div>
+                  <div class="today-event-title-row">
+                    <h3 class="today-event-title">${catInfo.icon} ${sanitize(event.title)}</h3>
+                  </div>
+                  <div class="today-datetime">
+                    <span>📅</span> <span>${this.formatDateTimeShort(event.startDateTime)}</span>
+                  </div>
                 </div>
-                <h3 class="event-title" onclick="window.App.openEventDetail('${event.id}')">${sanitize(event.title)}</h3>
-              </div>
-              <div><span class="status-badge ${isDeadlinePassed ? 'closed' : 'open'}">${isDeadlinePassed ? '🔒 締切済み' : '🟢 受付中'}</span></div>
-            </div>
-            <div class="event-meta-grid">
-              <div class="meta-item"><span>📅 <strong>開催:</strong> ${this.formatDateTime(event.startDateTime)}</span></div>
-              ${event.location ? `<div class="meta-item"><span>📍 <strong>場所:</strong> ${sanitize(event.location)}</span></div>` : ''}
-            </div>
-            <div class="countdown-box">
-              <span>⏰ <strong>回答締切:</strong> ${this.formatDateTime(event.deadlineDateTime)}</span>
-              <span class="countdown-timer">${isDeadlinePassed ? '⌛ 締切終了' : '⏳ ' + deadlineInfo.text}</span>
-            </div>
-            <div class="attendees-preview">
-              <div class="avatar-stack">${goingList.slice(0, 5).map(a => `<div class="avatar-pill">${this.renderAvatarHtml(a.avatar, 24)}</div>`).join('')}</div>
-              <div><strong>参加確定:</strong> <span style="color:var(--success); font-weight:700;">${goingList.length}名</span></div>
-            </div>
-            <div class="rsvp-section">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">あなたの回答:</span>
-              </div>
-              <div class="rsvp-buttons">
-                <button class="btn-rsvp ${myStatus === 'going' ? 'active-going' : ''}" onclick="window.App.submitRSVP('${event.id}', 'going')">✅ 参加</button>
-                <button class="btn-rsvp ${myStatus === 'maybe' ? 'active-maybe' : ''}" onclick="window.App.submitRSVP('${event.id}', 'maybe')">🤔 未定</button>
-                <button class="btn-rsvp ${myStatus === 'declined' ? 'active-declined' : ''}" onclick="window.App.submitRSVP('${event.id}', 'declined')">❌ 不参加</button>
-              </div>
-            </div>
-            ${isGoing ? `
-              <div class="calendar-action-box" style="margin-top:14px;">
-                <div class="calendar-action-header"><span>📅 スマホのカレンダーに予定を登録</span></div>
-                <div class="calendar-action-btns">
-                  <button class="btn btn-success btn-sm" onclick="window.App.syncWithGoogle('${event.id}')">Googleカレンダーに追加</button>
-                  <button class="btn btn-primary btn-sm" onclick="window.App.downloadCalendarICS('${event.id}')">iPhone / Android カレンダー (.ics)</button>
+                
+                <div class="today-bottom-meta">
+                  <div>
+                    <div class="today-avatars-row">
+                      <div class="avatar-stack-inline">
+                        ${goingList.slice(0, 3).map(a => `<div class="avatar-circle-sm">${this.renderAvatarHtml(a.avatar, 20)}</div>`).join('')}
+                      </div>
+                      ${goingList.length > 3 ? `<span class="avatar-count-pill">+${goingList.length - 3}</span>` : ''}
+                    </div>
+                    <div class="recruit-text">参加 ${goingList.length}人 / あと${recruitCount}人募集中</div>
+                  </div>
+                  
+                  <div class="deadline-pink-badge">
+                    <div class="deadline-pink-label">⌛ 回答締切まで</div>
+                    <div class="deadline-pink-time">${deadlineInfo.shortText}</div>
+                  </div>
                 </div>
-              </div>` : ''}
+              </div>
+            </div>
+
+            <!-- あなたの回答アクションピル -->
+            <div class="today-rsvp-row">
+              <span class="rsvp-prompt-text">あなたの回答</span>
+              <div class="rsvp-btn-group">
+                <button class="rsvp-pill-btn ${myStatus === 'going' ? 'active-going' : ''}" onclick="window.App.submitRSVP('${event.id}', 'going')">
+                  <span>✔</span> 参加する
+                </button>
+                <button class="rsvp-pill-btn ${myStatus === 'maybe' ? 'active-maybe' : ''}" onclick="window.App.submitRSVP('${event.id}', 'maybe')">
+                  <span>？</span> 未定
+                </button>
+                <button class="rsvp-pill-btn ${myStatus === 'declined' ? 'active-declined' : ''}" onclick="window.App.submitRSVP('${event.id}', 'declined')">
+                  <span>✕</span> 不参加
+                </button>
+              </div>
+            </div>
           </div>
-        `;
+          `;
+        },
+
+        // 2. 友達からのお誘いカード (2カラム)
+        renderInviteCard(event, currentUser, index) {
+          const goingList = (event.attendees || []).filter(a => a.status === 'going');
+          const creatorName = event.createdByName || '友達';
+          const creatorAvatar = event.createdByAvatar || '😊';
+          const themeClass = index % 2 === 0 ? 'theme-mint' : 'theme-warm';
+          const catInfo = this.getCategoryInfo(event.category);
+
+          return `
+          <div class="invite-mini-card ${themeClass}" onclick="window.App.openEventDetail('${event.id}')">
+            <div>
+              <div class="invite-card-sender">
+                <div class="sender-avatar-xs">${this.renderAvatarHtml(creatorAvatar, 20)}</div>
+                <span class="sender-name-text">${sanitize(creatorName)} さんから</span>
+              </div>
+              <div class="invite-event-name">${catInfo.icon} ${sanitize(event.title)}</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
+                <span>📅 ${this.formatDateTimeShort(event.startDateTime)}</span>
+                <span style="color: #cbd5e1; font-size: 11px;">❯</span>
+              </div>
+              <div class="invite-card-footer">
+                <span>👥 ${Math.max(1, goingList.length)}人参加予定</span>
+              </div>
+            </div>
+          </div>
+          `;
+        },
+
+        // 3. 進行中の予定リストアイテム
+        renderOngoingItem(event, currentUser) {
+          const goingList = (event.attendees || []).filter(a => a.status === 'going');
+          const catInfo = this.getCategoryInfo(event.category);
+          const thumbUrl = this.getEventThumbUrl(event);
+          const recruitCount = Math.max(1, 6 - goingList.length);
+          const deadlineInfo = this.getDeadlineRemaining(event.deadlineDateTime);
+          const isClosed = event.isDeadlinePassed || deadlineInfo.isPassed;
+
+          return `
+          <div class="ongoing-card-item" onclick="window.App.openEventDetail('${event.id}')">
+            <div class="ongoing-thumb" style="background-image: url('${thumbUrl}');"></div>
+            <div class="ongoing-info">
+              <div class="ongoing-header-line">
+                <h3 class="ongoing-title">${catInfo.icon} ${sanitize(event.title)}</h3>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span class="status-pill-subtle" style="${isClosed ? 'background:#fef3c7; color:#d97706;' : ''}">
+                    ${isClosed ? '締切済み' : '受付中'}
+                  </span>
+                  <span class="arrow-right-icon">❯</span>
+                </div>
+              </div>
+              <div style="font-size: 12px; font-weight: 600; color: #64748b; display: flex; align-items: center; gap: 4px;">
+                <span>📅</span> <span>${this.formatDateTimeShort(event.startDateTime)}</span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 2px;">
+                <div class="today-avatars-row">
+                  <div class="avatar-stack-inline">
+                    ${goingList.slice(0, 3).map(a => `<div class="avatar-circle-sm">${this.renderAvatarHtml(a.avatar, 18)}</div>`).join('')}
+                  </div>
+                  ${goingList.length > 3 ? `<span class="avatar-count-pill">+${goingList.length - 3}</span>` : ''}
+                </div>
+                <span style="font-size: 11px; color: #64748b; font-weight: 600;">参加 ${goingList.length}人 / あと${recruitCount}人</span>
+              </div>
+            </div>
+          </div>
+          `;
+        },
+
+        renderEventCard(event, currentUser) {
+          return this.renderOngoingItem(event, currentUser);
         }
       };
 
@@ -2400,33 +2713,33 @@
         }
 
         bindEvents() {
-          document.querySelectorAll('.tab-btn, .bottom-nav-item').forEach(btn => {
+          document.querySelectorAll('.bottom-tab-item, .tab-btn').forEach(btn => {
             btn.addEventListener('click', () => { if (btn.dataset.tab) this.switchTab(btn.dataset.tab); });
           });
-          document.querySelectorAll('.filter-pill').forEach(pill => {
+          document.querySelectorAll('.filter-pill-item, .filter-pill').forEach(pill => {
             pill.addEventListener('click', () => {
-              document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-              pill.classList.add('active');
-              this.currentFilter = pill.dataset.filter;
-              this.renderEvents();
+              this.setFilter(pill.dataset.filter);
             });
           });
-          const themeBtn = document.getElementById('theme-toggle-btn');
-          if (themeBtn) themeBtn.addEventListener('click', () => this.toggleTheme());
         }
 
-        toggleTheme() {
-          if (document.body.getAttribute('data-theme') === 'light') {
-            document.body.removeAttribute('data-theme');
-          } else {
-            document.body.setAttribute('data-theme', 'light');
-          }
+        setFilter(filter) {
+          this.currentFilter = filter || 'all';
+          document.querySelectorAll('.filter-pill-item, .filter-pill').forEach(p => {
+            p.classList.toggle('active', p.dataset.filter === this.currentFilter);
+          });
+          this.renderEvents();
         }
 
         switchTab(tab) {
           this.currentTab = tab;
-          document.querySelectorAll('.tab-btn, .bottom-nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-          document.querySelectorAll('.view-section').forEach(s => s.classList.toggle('active', s.id === 'view-' + tab));
+          document.querySelectorAll('.bottom-tab-item, .tab-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tab);
+          });
+          document.querySelectorAll('.view-section').forEach(s => {
+            s.classList.toggle('active', s.id === 'view-' + tab);
+          });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
           this.renderAll();
         }
 
@@ -2439,14 +2752,24 @@
 
         updateUserBadge() {
           const user = StorageManager.getCurrentUser();
-          const badge = document.getElementById('current-user-badge');
-          if (badge) {
-            badge.innerHTML = `${UI.renderAvatarHtml(user.avatar || '🦊', 22)} <span>${sanitize(user.name)}</span>`;
+          const topAvatar = document.getElementById('top-header-avatar');
+          if (topAvatar) {
+            topAvatar.innerHTML = UI.renderAvatarHtml(user.avatar || '🦊', 40);
           }
           const navAvatar = document.getElementById('bottom-nav-user-avatar');
           if (navAvatar) {
             navAvatar.innerHTML = UI.renderAvatarHtml(user.avatar || '🦊', 24);
           }
+        }
+
+        showNotificationInfo() {
+          const notifs = StorageManager.getNotifications();
+          if (notifs.length === 0) {
+            this.showToast('🔔 新しい通知はありません');
+            return;
+          }
+          const latest = notifs[0];
+          this.showToast(`🔔 ${latest.title}: ${latest.message}`);
         }
 
         // --- URLパラメータ（友達招待）の解析 ＆ サーバー即時追加 ---
@@ -2805,15 +3128,14 @@
           container.appendChild(img);
         }
 
-        // --- 予定一覧 ---
+        // --- 予定一覧（3つのセクションを画像通りにレンダリング） ---
         renderEvents() {
-          const container = document.getElementById('event-list-container');
-          if (!container) return;
           const me = StorageManager.getCurrentUser();
           const allGroups = StorageManager.getGroups();
-          let events = StorageManager.getEvents();
+          let allEvents = StorageManager.getEvents();
 
-          events = events.filter(e => {
+          // ユーザーに関連するイベントのみ抽出
+          allEvents = allEvents.filter(e => {
             if (!e.groupId) return true;
             if (e.createdById === me.id) return true;
             if (e.attendees && e.attendees.some(a => a.friendId === me.id || a.name === me.name)) return true;
@@ -2822,49 +3144,77 @@
             return false;
           });
 
-          document.querySelectorAll('.filter-pill').forEach(pill => {
-            pill.classList.toggle('active', pill.dataset.filter === this.currentFilter);
-          });
-
-          if (this.currentFilter === 'going') {
-            events = events.filter(e => e.attendees && e.attendees.some(a => (a.friendId === me.id || a.name === me.name) && a.status === 'going'));
-          } else if (this.currentFilter === 'open') {
-            events = events.filter(e => {
-              const dl = UI.getDeadlineRemaining(e.deadlineDateTime);
-              return !e.isDeadlinePassed && !dl.isPassed;
-            });
-          } else if (this.currentFilter === 'closed') {
-            events = events.filter(e => {
-              const dl = UI.getDeadlineRemaining(e.deadlineDateTime);
-              return e.isDeadlinePassed || dl.isPassed;
-            });
+          // 1. 今日の予定セクション
+          const todayContainer = document.getElementById('today-event-container');
+          if (todayContainer) {
+            if (allEvents.length > 0) {
+              // 1件目のイベントを今日の予定としてフィーチャー表示
+              const featuredEvent = allEvents[0];
+              todayContainer.innerHTML = UI.renderTodayCard(featuredEvent, me);
+            } else {
+              todayContainer.innerHTML = `
+                <div style="text-align:center; padding: 24px 16px; background:#ffffff; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); border:1px dashed #e2e8f0;">
+                  <div style="font-size:32px; margin-bottom:6px;">🏕️</div>
+                  <div style="font-size:14px; font-weight:800; color:#1e293b; margin-bottom:4px;">今日の予定はまだありません</div>
+                  <p style="font-size:12px; color:#64748b; margin-bottom:12px;">「＋ 予定を作る」から新しい予定を計画しましょう！</p>
+                  <button class="btn btn-primary btn-sm" onclick="window.App.openNewEventModal()">＋ 予定を作る</button>
+                </div>
+              `;
+            }
           }
 
-          if (events.length === 0) {
-            let emptyTitle = '該当する予定がありません';
-            let emptyDesc = '「＋ 新しい予定を作成する」から友達を誘ってみましょう！';
+          // 2. 友達からのお誘いセクション
+          const invitesContainer = document.getElementById('friend-invites-container');
+          if (invitesContainer) {
+            // 友達が作成したイベント、または2件目以降のイベント
+            const inviteList = allEvents.filter(e => e.createdById !== me.id);
+            const displayInvites = inviteList.length > 0 ? inviteList.slice(0, 2) : allEvents.slice(1, 3);
+            
+            if (displayInvites.length > 0) {
+              invitesContainer.innerHTML = displayInvites.map((e, idx) => UI.renderInviteCard(e, me, idx)).join('');
+            } else if (allEvents.length > 0) {
+              // 1件しかない場合はそのイベントをお誘いカードとしても配置
+              invitesContainer.innerHTML = [allEvents[0]].map((e, idx) => UI.renderInviteCard(e, me, idx)).join('');
+            } else {
+              invitesContainer.innerHTML = `
+                <div style="grid-column: 1/-1; text-align:center; padding:18px; background:#ffffff; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); font-size:12px; color:#64748b;">
+                  友達からの招待が届くとここに表示されます
+                </div>
+              `;
+            }
+          }
+
+          // 3. 進行中の予定一覧セクション
+          const ongoingContainer = document.getElementById('ongoing-events-container');
+          if (ongoingContainer) {
+            let filteredEvents = [...allEvents];
+
             if (this.currentFilter === 'going') {
-              emptyTitle = '参加予定のイベントはありません';
-              emptyDesc = '受付中の予定から「✅ 参加」を選んで回答してみましょう。';
+              filteredEvents = filteredEvents.filter(e => e.attendees && e.attendees.some(a => (a.friendId === me.id || a.name === me.name) && a.status === 'going'));
             } else if (this.currentFilter === 'open') {
-              emptyTitle = '現在受付中の予定はありません';
-              emptyDesc = '新しい予定を作成して友達を誘いましょう！';
+              filteredEvents = filteredEvents.filter(e => {
+                const dl = UI.getDeadlineRemaining(e.deadlineDateTime);
+                return !e.isDeadlinePassed && !dl.isPassed;
+              });
             } else if (this.currentFilter === 'closed') {
-              emptyTitle = '締切済みの予定はありません';
-              emptyDesc = '回答締切を迎えた予定がここに表示されます。';
+              filteredEvents = filteredEvents.filter(e => {
+                const dl = UI.getDeadlineRemaining(e.deadlineDateTime);
+                return e.isDeadlinePassed || dl.isPassed;
+              });
             }
 
-            container.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
-              <div style="font-size: 36px; margin-bottom: 8px;">📅</div>
-              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">${emptyTitle}</h3>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">${emptyDesc}</p>
-              <button class="btn btn-primary btn-sm" onclick="window.App.openNewEventModal()">＋ 予定を作成する</button>
-            </div>
-          `;
-            return;
+            if (filteredEvents.length === 0) {
+              ongoingContainer.innerHTML = `
+                <div style="text-align: center; padding: 30px 16px; background: #ffffff; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); border: 1px dashed #e2e8f0;">
+                  <div style="font-size: 32px; margin-bottom: 6px;">📅</div>
+                  <div style="font-size: 14px; font-weight: 800; color: #1e293b; margin-bottom: 4px;">該当する予定がありません</div>
+                  <p style="font-size: 12px; color: #64748b;">新しい予定を立てて友達を誘ってみましょう！</p>
+                </div>
+              `;
+            } else {
+              ongoingContainer.innerHTML = filteredEvents.map(e => UI.renderOngoingItem(e, me)).join('');
+            }
           }
-          container.innerHTML = events.map(e => UI.renderEventCard(e, me)).join('');
         }
 
         // --- グループ一覧 ---
