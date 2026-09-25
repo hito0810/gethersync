@@ -203,6 +203,86 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // --- 📅 カレンダー自動購読フィード (WebCal / iCal feed) ---
+  if ((pathname === '/api/calendar/subscribe' || pathname === '/calendar.ics') && req.method === 'GET') {
+    const rawFriends = memoryDB.userFriends[userId] || [];
+    const myFriendIds = rawFriends.map(f => f.id);
+    const deletedIds = memoryDB.deletedEventIds || [];
+
+    const myEvents = (memoryDB.events || []).filter(e => {
+      if (!e || !e.id || deletedIds.includes(e.id)) return false;
+      if (e.createdById === userId) return true;
+      if (e.attendees && e.attendees.some(a => a.friendId === userId && a.status === 'going')) return true;
+      if (e.groupId) {
+        const grp = (memoryDB.groups || []).find(g => g.id === e.groupId);
+        if (grp && Array.isArray(grp.memberIds) && grp.memberIds.includes(userId)) return true;
+        return false;
+      }
+      if (myFriendIds.includes(e.createdById)) return true;
+      return false;
+    });
+
+    const formatToICSDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      const pad = (n) => String(n).padStart(2, '0');
+      return date.getUTCFullYear() + pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) + 'T' + pad(date.getUTCHours()) + pad(date.getUTCMinutes()) + pad(date.getUTCSeconds()) + 'Z';
+    };
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//AsoBo//JA',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:AsoBo 予定カレンダー',
+      'X-WR-TIMEZONE:Asia/Tokyo',
+      'REFRESH-INTERVAL;VALUE=DURATION:PT10M',
+      'X-PUBLISHED-TTL:PT10M'
+    ];
+
+    const dtStamp = formatToICSDate(new Date().toISOString());
+
+    myEvents.forEach(e => {
+      const uid = `asobo-event-${e.id}@asobo.app`;
+      const dtStart = formatToICSDate(e.startDateTime);
+      let endDateTime = e.endDateTime;
+      if (!endDateTime) {
+        const end = new Date(e.startDateTime);
+        end.setHours(end.getHours() + 2);
+        endDateTime = end.toISOString();
+      }
+      const dtEnd = formatToICSDate(endDateTime);
+      const summary = (e.title || '').replace(/[\r\n]/g, ' ');
+      const description = (e.description || '').replace(/[\r\n]/g, '\\n');
+      const location = (e.location || '').replace(/[\r\n]/g, ' ');
+
+      lines.push('BEGIN:VEVENT');
+      lines.push(`UID:${uid}`);
+      lines.push('SEQUENCE:0');
+      lines.push(`DTSTAMP:${dtStamp}`);
+      lines.push(`DTSTART:${dtStart}`);
+      lines.push(`DTEND:${dtEnd}`);
+      lines.push(`SUMMARY:${summary}`);
+      if (description) lines.push(`DESCRIPTION:${description}`);
+      if (location) lines.push(`LOCATION:${location}`);
+      lines.push('STATUS:CONFIRMED');
+      lines.push('END:VEVENT');
+    });
+
+    lines.push('END:VCALENDAR');
+
+    res.writeHead(200, {
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': 'inline; filename="asobo_calendar.ics"',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    res.end(lines.join('\r\n'));
+    return;
+  }
+
   // --- API エンドポイント: 予定の単体保存 (POST /api/events/save) ---
   if (pathname === '/api/events/save' && req.method === 'POST') {
     let body = '';

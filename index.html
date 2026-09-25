@@ -1596,6 +1596,20 @@
           </div>
         </div>
 
+        <!-- 📅 スマホカレンダー自動同期設定 -->
+        <div style="background: linear-gradient(135deg, rgba(0,181,108,0.08) 0%, rgba(59,130,246,0.08) 100%); border: 1px solid rgba(0,181,108,0.25); border-radius: var(--radius-md); padding: 14px; margin-top: 14px;">
+          <div style="font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>📅</span> <span>スマホカレンダーと自動同期</span>
+            <span style="font-size: 10px; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 999px;">おすすめ</span>
+          </div>
+          <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 10px;">
+            1回タップして購読（照会）登録しておくと、予定の作成はもちろん、<strong>アプリで予定を削除・変更した際もスマホカレンダーから自動で消去・更新</strong>されます！
+          </p>
+          <button type="button" class="btn btn-primary btn-full btn-sm" onclick="window.App.subscribeCalendarFeed()">
+            ⚡ スマホカレンダーと自動同期する
+          </button>
+        </div>
+
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
           <button type="button" class="btn btn-secondary" onclick="window.App.closeModal('modal-profile')">閉じる</button>
           <button type="submit" class="btn btn-primary">プロフィールを保存</button>
@@ -3618,12 +3632,40 @@
             ${(ev.attendees || []).map(a => `<div class="attendee-row" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);"><span style="display:flex; align-items:center; gap:6px;">${UI.renderAvatarHtml(a.avatar || '👤', 24)} <span>${sanitize(a.name)}</span></span><span class="attendee-status-badge ${a.status}">${a.status === 'going' ? '✅ 参加' : (a.status === 'declined' ? '❌ 不参加' : '🤔 未定')}</span></div>`).join('')}
           </div>
           <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
-            <button class="btn btn-success btn-full" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダーに追加</button>
-            <button class="btn btn-primary btn-full" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 iPhone / Android カレンダー (.ics)</button>
+            <button class="btn btn-primary btn-full" onclick="window.App.subscribeCalendarFeed()">
+              ⚡ カレンダー自動同期（予定削除・変更も自動連動）
+            </button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 単発カレンダー登録 (.ics)</button>
+              <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダー</button>
+            </div>
           </div>
           ${deleteBtnHtml}
         `;
           this.openModal('modal-event-detail');
+        }
+
+        subscribeCalendarFeed() {
+          const me = StorageManager.getCurrentUser();
+          if (!me || !me.id) return;
+
+          const host = window.location.host;
+          const origin = window.location.origin;
+          const webcalUrl = `webcal://${host}/api/calendar/subscribe?userId=${encodeURIComponent(me.id)}`;
+          const httpsUrl = `${origin}/api/calendar/subscribe?userId=${encodeURIComponent(me.id)}`;
+
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+          if (isIOS) {
+            // iOSではwebcalプロトコルで開くとiPhoneカレンダー照会（購読）ダイアログが直接発火
+            window.location.href = webcalUrl;
+            this.showToast('📅 iPhoneカレンダーの自動同期を開きます（「照会」をタップしてください）');
+          } else {
+            // Googleカレンダーや他端末向け
+            const googleSubUrl = `https://calendar.google.com/calendar/r/settings/addbyurl?url=${encodeURIComponent(httpsUrl)}`;
+            window.open(googleSubUrl, '_blank');
+            this.showToast('📅 Googleカレンダーの自動同期画面を開きました');
+          }
         }
 
         async handleDeleteEvent(eventId, eventTitle) {
