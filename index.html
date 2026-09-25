@@ -2404,7 +2404,9 @@
           if (!event) return '';
           const myRsvp = (event.attendees || []).find(a => a.friendId === currentUser.id || a.name === currentUser.name);
           const myStatus = myRsvp ? myRsvp.status : 'unanswered';
+          const isGoing = myStatus === 'going';
           const deadlineInfo = this.getDeadlineRemaining(event.deadlineDateTime);
+          const isDeadlinePassed = event.isDeadlinePassed || deadlineInfo.isPassed;
           const goingList = (event.attendees || []).filter(a => a.status === 'going');
           const catInfo = this.getCategoryInfo(event.category);
           const thumbUrl = this.getEventThumbUrl(event);
@@ -2447,20 +2449,34 @@
               </div>
             </div>
 
-            <!-- あなたの回答アクションピル -->
+            <!-- 締切前: あなたの回答アクションピル / 締切後: カレンダー追加 -->
             <div class="today-rsvp-row">
-              <span class="rsvp-prompt-text">あなたの回答</span>
-              <div class="rsvp-btn-group">
-                <button class="rsvp-pill-btn ${myStatus === 'going' ? 'active-going' : ''}" onclick="window.App.submitRSVP('${event.id}', 'going')">
-                  <span>✔</span> 参加する
-                </button>
-                <button class="rsvp-pill-btn ${myStatus === 'maybe' ? 'active-maybe' : ''}" onclick="window.App.submitRSVP('${event.id}', 'maybe')">
-                  <span>？</span> 未定
-                </button>
-                <button class="rsvp-pill-btn ${myStatus === 'declined' ? 'active-declined' : ''}" onclick="window.App.submitRSVP('${event.id}', 'declined')">
-                  <span>✕</span> 不参加
-                </button>
-              </div>
+              ${isDeadlinePassed ? `
+                ${isGoing ? `
+                  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px;">
+                    <span style="font-size: 12px; font-weight: 800; color: var(--primary);">✅ 参加確定！</span>
+                    <div style="display: flex; gap: 6px;">
+                      <button class="btn btn-success btn-sm" style="font-size: 11px; padding: 6px 10px;" onclick="event.stopPropagation(); window.App.syncWithGoogle('${event.id}')">📅 Google</button>
+                      <button class="btn btn-primary btn-sm" style="font-size: 11px; padding: 6px 10px;" onclick="event.stopPropagation(); window.App.downloadCalendarICS('${event.id}')">📲 iCal / 端末</button>
+                    </div>
+                  </div>
+                ` : `
+                  <span style="font-size: 12px; font-weight: 700; color: #94a3b8; width: 100%; text-align: center;">🔒 回答が締め切られました</span>
+                `}
+              ` : `
+                <span class="rsvp-prompt-text">あなたの回答</span>
+                <div class="rsvp-btn-group">
+                  <button class="rsvp-pill-btn ${myStatus === 'going' ? 'active-going' : ''}" onclick="event.stopPropagation(); window.App.submitRSVP('${event.id}', 'going')">
+                    <span>✔</span> 参加する
+                  </button>
+                  <button class="rsvp-pill-btn ${myStatus === 'maybe' ? 'active-maybe' : ''}" onclick="event.stopPropagation(); window.App.submitRSVP('${event.id}', 'maybe')">
+                    <span>？</span> 未定
+                  </button>
+                  <button class="rsvp-pill-btn ${myStatus === 'declined' ? 'active-declined' : ''}" onclick="event.stopPropagation(); window.App.submitRSVP('${event.id}', 'declined')">
+                    <span>✕</span> 不参加
+                  </button>
+                </div>
+              `}
             </div>
           </div>
           `;
@@ -3558,6 +3574,11 @@
           const creatorName = ev.createdByName || '友達';
           const going = (ev.attendees || []).filter(a => a.status === 'going');
 
+          const deadlineInfo = UI.getDeadlineRemaining(ev.deadlineDateTime);
+          const isDeadlinePassed = ev.isDeadlinePassed || deadlineInfo.isPassed;
+          const myRsvp = (ev.attendees || []).find(a => a.friendId === me.id || a.name === me.name);
+          const isGoing = myRsvp && myRsvp.status === 'going';
+
           let deleteBtnHtml = '';
           if (isOwner) {
             deleteBtnHtml = `
@@ -3569,12 +3590,40 @@
             `;
           }
 
+          let calendarSectionHtml = '';
+          if (isDeadlinePassed) {
+            if (isGoing) {
+              calendarSectionHtml = `
+                <div style="margin-top: 16px; background: #e6f8f0; border: 1px solid rgba(0, 181, 108, 0.3); border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+                  <div style="font-size: 13px; font-weight: 800; color: #00B56C; display: flex; align-items: center; gap: 6px;">
+                    <span>📅</span> <span>回答締切・参加確定！カレンダーに追加</span>
+                  </div>
+                  <button class="btn btn-success btn-full" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダーに追加</button>
+                  <button class="btn btn-primary btn-full" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 iPhone / Android カレンダー (.ics)</button>
+                </div>
+              `;
+            } else {
+              calendarSectionHtml = `
+                <div style="margin-top: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px; font-size: 12px; color: #64748b; text-align: center; font-weight: 600;">
+                  🔒 この予定は回答が締め切られました
+                </div>
+              `;
+            }
+          } else {
+            calendarSectionHtml = `
+              <div style="margin-top: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: var(--radius-md); padding: 12px; font-size: 12px; color: #64748b; text-align: center; font-weight: 600;">
+                ⏰ 回答締切後に、カレンダー追加ボタンが表示されます
+              </div>
+            `;
+          }
+
           document.getElementById('event-detail-content').innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
             <div>
               <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
                 <span class="group-tag">👥 ${sanitize(ev.groupName || '全体')}</span>
                 ${isOwner ? '<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(0,181,108,0.12); color:var(--primary); font-weight:700;">👑 あなたが作成</span>' : `<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(100,116,139,0.12); color:var(--text-secondary); font-weight:600;">👤 主催: ${sanitize(creatorName)}</span>`}
+                ${isDeadlinePassed ? '<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:#fef3c7; color:#d97706; font-weight:700;">🔒 締切済み</span>' : '<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:#e6f8f0; color:var(--primary); font-weight:700;">🟢 受付中</span>'}
               </div>
               <h3 style="font-size:18px; font-weight:800; color:#1e293b;">${sanitize(ev.title)}</h3>
             </div>
@@ -3589,10 +3638,7 @@
           <div style="background:var(--bg-primary); padding:10px; border-radius:var(--radius-md); max-height:180px; overflow-y:auto; border: 1px solid #edf2f7;">
             ${(ev.attendees || []).map(a => `<div class="attendee-row" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);"><span style="display:flex; align-items:center; gap:6px;">${UI.renderAvatarHtml(a.avatar || '👤', 24)} <span>${sanitize(a.name)}</span></span><span class="attendee-status-badge ${a.status}">${a.status === 'going' ? '✅ 参加' : (a.status === 'declined' ? '❌ 不参加' : '🤔 未定')}</span></div>`).join('')}
           </div>
-          <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
-            <button class="btn btn-success btn-full" onclick="window.App.syncWithGoogle('${ev.id}')">📅 Googleカレンダーに追加</button>
-            <button class="btn btn-primary btn-full" onclick="window.App.downloadCalendarICS('${ev.id}')">📲 iPhone / Android カレンダー (.ics)</button>
-          </div>
+          ${calendarSectionHtml}
           ${deleteBtnHtml}
         `;
           this.openModal('modal-event-detail');
