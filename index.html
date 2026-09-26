@@ -1712,69 +1712,11 @@
         return prefix + '_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
       };
 
-      const now = new Date();
-      const in2Days = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-      const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-      const in10Hours = new Date(now.getTime() + 10 * 60 * 60 * 1000);
-
       const INITIAL_DATA = {
         currentUser: { id: '', name: 'あなた', avatar: '🦊' },
-        friends: [
-          { id: 'f_takumi', name: 'たくみ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80', note: '大学同期' },
-          { id: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', note: '高校の友達' }
-        ],
-        groups: [
-          { id: 'g_all', name: 'いつもの仲間', icon: '👥', color: '#00B56C', description: '飲み会やBBQのメンバー', memberIds: ['f_takumi', 'f_yuto'] }
-        ],
-        events: [
-          {
-            id: 'evt_camp',
-            title: 'キャンプ',
-            category: 'camp',
-            location: '奥多摩リバーサイドキャンプ場',
-            startDateTime: new Date(now.getTime() + 18 * 60 * 60 * 1000).toISOString(),
-            deadlineDateTime: in10Hours.toISOString(),
-            createdByName: 'あなた',
-            createdByAvatar: '🦊',
-            thumbUrl: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80',
-            description: '秋の星空キャンプ！防寒着を持ってきてね',
-            attendees: [
-              { friendId: 'f_takumi', name: 'たくみ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80', status: 'going' },
-              { friendId: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'going' }
-            ]
-          },
-          {
-            id: 'evt_drink',
-            title: '飲み会しよー！',
-            category: 'drink',
-            location: '渋谷 居酒屋',
-            startDateTime: in2Days.toISOString(),
-            deadlineDateTime: in2Days.toISOString(),
-            createdByName: 'たくみ',
-            createdByAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80',
-            thumbUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=500&auto=format&fit=crop&q=80',
-            description: '久しぶりにみんなで集まろう！',
-            attendees: [
-              { friendId: 'f_takumi', name: 'たくみ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80', status: 'going' },
-              { friendId: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'going' }
-            ]
-          },
-          {
-            id: 'evt_bbq',
-            title: 'BBQやろうぜ！',
-            category: 'camp',
-            location: '豊洲 BBQ PARK',
-            startDateTime: in3Days.toISOString(),
-            deadlineDateTime: in3Days.toISOString(),
-            createdByName: 'ゆうと',
-            createdByAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-            thumbUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&auto=format&fit=crop&q=80',
-            description: '海沿いで手ぶらBBQ！',
-            attendees: [
-              { friendId: 'f_yuto', name: 'ゆうと', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', status: 'going' }
-            ]
-          }
-        ],
+        friends: [],
+        groups: [],
+        events: [],
         notifications: []
       };
 
@@ -1983,9 +1925,19 @@
           CookieManager.set('gathersync_user_name', user.name);
           CookieManager.set('gathersync_user_avatar', user.avatar);
 
-          if (!SafeStorage.getItem(STORAGE_KEYS.FRIENDS)) SafeStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(INITIAL_DATA.friends));
-          if (!SafeStorage.getItem(STORAGE_KEYS.GROUPS)) SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(INITIAL_DATA.groups));
-          if (!SafeStorage.getItem(STORAGE_KEYS.EVENTS)) SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(INITIAL_DATA.events));
+          let storedFriends = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.FRIENDS) || '[]');
+          // デモ用の仮友達（f_takumi, f_yuto）が残っていたら自動クリーンアップ
+          storedFriends = storedFriends.filter(f => f.id !== 'f_takumi' && f.id !== 'f_yuto');
+          SafeStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(storedFriends));
+
+          let storedGroups = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.GROUPS) || '[]');
+          storedGroups = storedGroups.filter(g => g.id !== 'g_all');
+          SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(storedGroups));
+
+          let storedEvents = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.EVENTS) || '[]');
+          storedEvents = storedEvents.filter(e => e.id !== 'evt_camp' && e.id !== 'evt_drink' && e.id !== 'evt_bbq');
+          SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(storedEvents));
+
           if (!SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(INITIAL_DATA.notifications));
 
           // サーバーへ初期データ同期
