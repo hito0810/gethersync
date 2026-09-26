@@ -21,19 +21,12 @@ function initDB() {
   if (fs.existsSync(DB_FILE)) {
     try {
       const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-      const userFriends = data.userFriends || {};
-      for (const uid in userFriends) {
-        if (Array.isArray(userFriends[uid])) {
-          userFriends[uid] = userFriends[uid].filter(f => f.id !== 'f_takumi' && f.id !== 'f_yuto');
-        }
-      }
-
       memoryDB = {
         epoch: data.epoch || Date.now(),
         users: data.users || {},
-        userFriends: userFriends,
-        groups: (data.groups || []).filter(g => g.id !== 'g_all'),
-        events: (data.events || []).filter(e => e.id !== 'evt_camp' && e.id !== 'evt_drink' && e.id !== 'evt_bbq'),
+        userFriends: data.userFriends || {},
+        groups: data.groups || [],
+        events: data.events || [],
         deletedEventIds: data.deletedEventIds || [],
         notifications: data.notifications || []
       };

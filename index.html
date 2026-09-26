@@ -1925,19 +1925,9 @@
           CookieManager.set('gathersync_user_name', user.name);
           CookieManager.set('gathersync_user_avatar', user.avatar);
 
-          let storedFriends = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.FRIENDS) || '[]');
-          // デモ用の仮友達（f_takumi, f_yuto）が残っていたら自動クリーンアップ
-          storedFriends = storedFriends.filter(f => f.id !== 'f_takumi' && f.id !== 'f_yuto');
-          SafeStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(storedFriends));
-
-          let storedGroups = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.GROUPS) || '[]');
-          storedGroups = storedGroups.filter(g => g.id !== 'g_all');
-          SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(storedGroups));
-
-          let storedEvents = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.EVENTS) || '[]');
-          storedEvents = storedEvents.filter(e => e.id !== 'evt_camp' && e.id !== 'evt_drink' && e.id !== 'evt_bbq');
-          SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(storedEvents));
-
+          if (!SafeStorage.getItem(STORAGE_KEYS.FRIENDS)) SafeStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(INITIAL_DATA.friends));
+          if (!SafeStorage.getItem(STORAGE_KEYS.GROUPS)) SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(INITIAL_DATA.groups));
+          if (!SafeStorage.getItem(STORAGE_KEYS.EVENTS)) SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(INITIAL_DATA.events));
           if (!SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(INITIAL_DATA.notifications));
 
           // サーバーへ初期データ同期
