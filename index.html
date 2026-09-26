@@ -3441,7 +3441,15 @@
             if (friends.length === 0) {
               c.innerHTML = '<div style="font-size: 12px; color: var(--text-secondary); text-align: center; padding: 6px;">まだ友達がいません（後から追加できます）</div>';
             } else {
-              c.innerHTML = friends.map(f => `<label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" name="new-group-member" value="${f.id}"> <span>${f.avatar || '😊'} ${f.name}</span></label>`).join('');
+              c.innerHTML = friends.map(f => `
+                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; padding: 4px; border-radius: 8px; background: rgba(0,0,0,0.02);">
+                  <input type="checkbox" name="new-group-member" value="${f.id}" style="width: 18px; height: 18px; cursor: pointer;">
+                  <span style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px;">
+                    ${UI.renderAvatarHtml(f.avatar || '😊', 24)}
+                    <span>${sanitize(f.name)}</span>
+                  </span>
+                </label>
+              `).join('');
             }
           }
           this.openModal('modal-add-group');
@@ -3483,10 +3491,20 @@
             c.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary); text-align: center; padding: 6px;">友達を招待リンクから追加すると、グループメンバーに設定できます</div>`;
           } else {
             c.innerHTML = `
-            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">あなた: ${me.avatar} ${me.name} (固定)</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <span>あなた:</span> ${UI.renderAvatarHtml(me.avatar || '🦊', 20)} <strong>${sanitize(me.name)}</strong> (固定)
+            </div>
             ${friends.map(f => {
               const checked = currentMemberIds.includes(f.id) ? 'checked' : '';
-              return `<label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" name="edit-group-member" value="${f.id}" ${checked}> <span>${f.avatar || '😊'} ${f.name}</span></label>`;
+              return `
+                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; padding: 4px; border-radius: 8px; background: rgba(0,0,0,0.02);">
+                  <input type="checkbox" name="edit-group-member" value="${f.id}" ${checked} style="width: 18px; height: 18px; cursor: pointer;">
+                  <span style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px;">
+                    ${UI.renderAvatarHtml(f.avatar || '😊', 24)}
+                    <span>${sanitize(f.name)}</span>
+                  </span>
+                </label>
+              `;
             }).join('')}
           `;
           }

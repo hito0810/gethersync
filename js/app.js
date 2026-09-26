@@ -505,15 +505,14 @@ class AppController {
     }
   }
 
-  // グループ作成
   openAddGroupModal() {
     const container = document.getElementById('group-members-checklist');
     const friends = StorageManager.getFriends();
     if (container) {
       container.innerHTML = friends.map(f => `
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:13px; cursor:pointer;">
-          <input type="checkbox" name="group-members" value="${f.id}">
-          <span>${f.avatar} ${f.name}</span>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; cursor:pointer;">
+          <input type="checkbox" name="group-members" value="${f.id}" style="width: 18px; height: 18px;">
+          <span style="display:flex; align-items:center; gap:6px;">${UI.renderAvatarHtml(f.avatar, 24)} <strong>${f.name}</strong></span>
         </label>
       `).join('');
     }
