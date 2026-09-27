@@ -2393,17 +2393,30 @@
           this.saveEvents(merged);
         },
 
-        // --- 🔔 通知マネージャー（見たら消える未読管理＆7日自動消去） ---
+        // --- 🔔 通知マネージャー（一括表示＆閲覧から1時間後に自動削除） ---
         getNotifications() {
           const list = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
           const now = Date.now();
+          const ONE_HOUR = 60 * 60 * 1000;
           const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-          return list.filter(n => {
+
+          const filtered = list.filter(n => {
             if (!n || !n.id) return false;
+            // 閲覧済みの場合: 閲覧時刻（readAt）から1時間経過で自動削除
+            if (n.read && n.readAt) {
+              const readTime = new Date(n.readAt).getTime();
+              if (readTime && (now - readTime >= ONE_HOUR)) return false;
+            }
+            // 未読のままでも7日経過した古い通知は自動削除
             const t = n.timestamp ? new Date(n.timestamp).getTime() : 0;
             if (t && (now - t > SEVEN_DAYS)) return false;
             return true;
           });
+
+          if (filtered.length !== list.length) {
+            SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(filtered));
+          }
+          return filtered;
         },
 
         getUnreadNotificationCount() {
@@ -2425,7 +2438,8 @@
             eventId: n.eventId || null,
             time: n.time || 'たった今',
             timestamp: new Date().toISOString(),
-            read: false
+            read: false,
+            readAt: null
           });
           if (notifs.length > 50) notifs.pop();
           SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
@@ -2433,8 +2447,21 @@
 
         markAllNotificationsAsRead() {
           const notifs = this.getNotifications();
-          notifs.forEach(n => { n.read = true; });
-          SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
+          const nowIso = new Date().toISOString();
+          let hasChange = false;
+          notifs.forEach(n => {
+            if (!n.read) {
+              n.read = true;
+              n.readAt = nowIso;
+              hasChange = true;
+            } else if (!n.readAt) {
+              n.readAt = nowIso;
+              hasChange = true;
+            }
+          });
+          if (hasChange) {
+            SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
+          }
         },
 
         clearAllNotifications() {
@@ -2909,6 +2936,9 @@
           }
 
           container.innerHTML = `
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
+              <span>⏳</span> <span>確認したお知らせは、確認後1時間で自動的に整理（削除）されます</span>
+            </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
               ${notifs.map(n => `
                 <div style="padding: 12px 14px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; cursor: ${n.eventId ? 'pointer' : 'default'}; transition: all 0.2s;"
