@@ -198,7 +198,8 @@ const server = http.createServer((req, res) => {
       epoch: memoryDB.epoch || 1,
       friends: myFriends,
       groups: enrichedGroups,
-      events: myEvents
+      events: myEvents,
+      deletedEventIds: memoryDB.deletedEventIds || []
     }));
     return;
   }

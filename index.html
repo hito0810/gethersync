@@ -2619,6 +2619,9 @@
 
           // 🛡️ サーバーから受信したデータを同期
           let updated = false;
+          if (Array.isArray(data.deletedEventIds)) {
+            data.deletedEventIds.forEach(delId => StorageManager.addDeletedEventId(delId));
+          }
           if (Array.isArray(data.friends)) {
             StorageManager.mergeFriends(data.friends);
             updated = true;
