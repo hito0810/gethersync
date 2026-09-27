@@ -1186,22 +1186,48 @@
           <label class="form-label" for="event-title">予定のタイトル *</label>
           <input type="text" id="event-title" class="form-input" placeholder="例: 週末BBQキャンプ、同期飲み会" required>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="event-category">カテゴリ</label>
-            <select id="event-category" class="form-select">
-              <option value="drink">🍻 飲み会・食事</option>
-              <option value="camp">⛺ アウトドア・旅行</option>
-              <option value="sports">⚽ スポーツ・運動</option>
-              <option value="study">💻 勉強・ワーク</option>
-              <option value="other">🎉 その他イベント</option>
-            </select>
+        <div class="form-group">
+          <label class="form-label" for="event-category">カテゴリ</label>
+          <select id="event-category" class="form-select">
+            <option value="drink">🍻 飲み会・食事</option>
+            <option value="camp">⛺ アウトドア・旅行</option>
+            <option value="sports">⚽ スポーツ・運動</option>
+            <option value="study">💻 勉強・ワーク</option>
+            <option value="other">🎉 その他イベント</option>
+          </select>
+        </div>
+
+        <!-- 招待する相手（公開範囲）の選択 -->
+        <div class="form-group" style="background: var(--bg-primary); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <label class="form-label" style="margin-bottom: 8px; font-weight: 700;">招待する相手 *</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px;">
+            <button type="button" id="btn-scope-all" class="btn btn-sm btn-primary" onclick="window.App.setEventScope('all')" style="font-size: 11px; padding: 8px 4px;">
+              🌐 全体の友達
+            </button>
+            <button type="button" id="btn-scope-group" class="btn btn-sm btn-secondary" onclick="window.App.setEventScope('group')" style="font-size: 11px; padding: 8px 4px;">
+              👥 グループ
+            </button>
+            <button type="button" id="btn-scope-friends" class="btn btn-sm btn-secondary" onclick="window.App.setEventScope('friends')" style="font-size: 11px; padding: 8px 4px;">
+              👤 特定の友達
+            </button>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="event-group-select">招待するグループ</label>
+          <input type="hidden" id="event-scope-val" value="all">
+
+          <!-- グループ選択エリア -->
+          <div id="event-scope-group-box" style="display: none; margin-top: 8px;">
+            <label class="form-label" for="event-group-select" style="font-size: 12px;">招待するグループを選択:</label>
             <select id="event-group-select" class="form-select"></select>
           </div>
+
+          <!-- 特定の友達選択エリア -->
+          <div id="event-scope-friends-box" style="display: none; margin-top: 8px;">
+            <label class="form-label" style="font-size: 12px; margin-bottom: 6px;">招待する友達を選択（複数選択可）:</label>
+            <div id="event-friends-checklist" style="max-height: 140px; overflow-y: auto; background: var(--bg-card); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+              <!-- 友達チェックボックスが動的描画されます -->
+            </div>
+          </div>
         </div>
+
         <div class="form-group">
           <label class="form-label" for="event-location">開催場所（店名・住所）</label>
           <input type="text" id="event-location" class="form-input" placeholder="例: 新宿 魚金、奥多摩リバーサイド">
@@ -2115,7 +2141,7 @@
             { friendId: me.id, name: me.name, avatar: me.avatar, status: 'going', comment: '主催者' }
           ];
 
-          if (e.groupId) {
+          if (e.scope === 'group' && e.groupId) {
             const group = this.getGroupById(e.groupId);
             if (group && group.memberIds) {
               group.memberIds.forEach(mid => {
@@ -2133,6 +2159,21 @@
                 }
               });
             }
+          } else if (e.scope === 'friends' && Array.isArray(e.targetFriendIds)) {
+            e.targetFriendIds.forEach(fid => {
+              if (fid !== me.id) {
+                const friend = allFriends.find(f => f.id === fid);
+                if (friend && !attendees.some(a => a.friendId === friend.id)) {
+                  attendees.push({
+                    friendId: friend.id,
+                    name: friend.name,
+                    avatar: friend.avatar,
+                    status: 'unanswered',
+                    comment: ''
+                  });
+                }
+              }
+            });
           }
 
           const newEv = {
@@ -2144,6 +2185,8 @@
             startDateTime: e.startDateTime,
             endDateTime: e.endDateTime || '',
             deadlineDateTime: e.deadlineDateTime,
+            scope: e.scope || (e.groupId ? 'group' : 'all'),
+            targetFriendIds: Array.isArray(e.targetFriendIds) ? e.targetFriendIds : [],
             groupId: e.groupId || null,
             groupName: e.groupName || '個別招待 / 全体',
             createdById: me.id,
@@ -3115,12 +3158,19 @@
           let allEvents = StorageManager.getEvents();
 
           allEvents = allEvents.filter(e => {
-            if (!e.groupId) return true;
             if (e.createdById === me.id) return true;
             if (e.attendees && e.attendees.some(a => a.friendId === me.id || a.name === me.name)) return true;
-            const grp = allGroups.find(g => g.id === e.groupId);
-            if (grp && grp.memberIds && grp.memberIds.includes(me.id)) return true;
-            return false;
+            if (e.scope === 'group' || e.groupId) {
+              if (!e.groupId) return false;
+              const grp = allGroups.find(g => g.id === e.groupId);
+              if (grp && grp.memberIds && grp.memberIds.includes(me.id)) return true;
+              return false;
+            }
+            if (e.scope === 'friends') {
+              if (Array.isArray(e.targetFriendIds) && e.targetFriendIds.includes(me.id)) return true;
+              return false;
+            }
+            return true;
           });
 
           const todayEvents = allEvents.filter(e => this.isSameDateAsToday(e.startDateTime));
@@ -3166,12 +3216,19 @@
 
           // ユーザーに関連するイベントのみ抽出
           allEvents = allEvents.filter(e => {
-            if (!e.groupId) return true;
             if (e.createdById === me.id) return true;
             if (e.attendees && e.attendees.some(a => a.friendId === me.id || a.name === me.name)) return true;
-            const grp = allGroups.find(g => g.id === e.groupId);
-            if (grp && grp.memberIds && grp.memberIds.includes(me.id)) return true;
-            return false;
+            if (e.scope === 'group' || e.groupId) {
+              if (!e.groupId) return false;
+              const grp = allGroups.find(g => g.id === e.groupId);
+              if (grp && grp.memberIds && grp.memberIds.includes(me.id)) return true;
+              return false;
+            }
+            if (e.scope === 'friends') {
+              if (Array.isArray(e.targetFriendIds) && e.targetFriendIds.includes(me.id)) return true;
+              return false;
+            }
+            return true;
           });
 
           // 1. 今日の予定セクション（今日開催の予定のみを対象）
@@ -3351,9 +3408,14 @@
                 <div style="font-size: 12px; color: var(--text-secondary);">${sanitize(f.note || '同期・友達')}</div>
               </div>
             </div>
-            <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3); padding: 4px 10px;" onclick="window.App.handleDeleteFriend('${f.id}', '${sanitize(f.name)}')">
-              🗑️ 削除
-            </button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-primary btn-sm" style="padding: 4px 10px; font-size: 11px;" onclick="window.App.openNewEventModal(null, '${f.id}')">
+                📅 誘う
+              </button>
+              <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3); padding: 4px 8px;" onclick="window.App.handleDeleteFriend('${f.id}', '${sanitize(f.name)}')">
+                🗑️
+              </button>
+            </div>
           </div>
         `).join('');
         }
@@ -3406,13 +3468,67 @@
         openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
         closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); }
 
+        setEventScope(scope) {
+          const scopeValInput = document.getElementById('event-scope-val');
+          if (scopeValInput) scopeValInput.value = scope;
+
+          const btnAll = document.getElementById('btn-scope-all');
+          const btnGroup = document.getElementById('btn-scope-group');
+          const btnFriends = document.getElementById('btn-scope-friends');
+
+          if (btnAll) btnAll.className = scope === 'all' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary';
+          if (btnGroup) btnGroup.className = scope === 'group' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary';
+          if (btnFriends) btnFriends.className = scope === 'friends' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary';
+
+          const groupBox = document.getElementById('event-scope-group-box');
+          const friendsBox = document.getElementById('event-scope-friends-box');
+
+          if (groupBox) groupBox.style.display = scope === 'group' ? 'block' : 'none';
+          if (friendsBox) friendsBox.style.display = scope === 'friends' ? 'block' : 'none';
+        }
+
         // --- 予定作成モーダル ---
-        openNewEventModal(gid) {
+        openNewEventModal(gid = null, preselectedFriendId = null) {
           const groupSelect = document.getElementById('event-group-select');
           const groups = StorageManager.getGroups();
+          const friends = StorageManager.getFriends();
+
           if (groupSelect) {
-            groupSelect.innerHTML = '<option value="">（全体公開 / 全ての友達）</option>' + groups.map(g => `<option value="${g.id}" ${gid === g.id ? 'selected' : ''}>${g.icon} ${g.name}</option>`).join('');
+            if (groups.length === 0) {
+              groupSelect.innerHTML = '<option value="">（グループがまだ作成されていません）</option>';
+            } else {
+              groupSelect.innerHTML = groups.map(g => `<option value="${g.id}" ${gid === g.id ? 'selected' : ''}>${g.icon} ${g.name}</option>`).join('');
+            }
           }
+
+          const friendsListContainer = document.getElementById('event-friends-checklist');
+          if (friendsListContainer) {
+            if (friends.length === 0) {
+              friendsListContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-secondary); text-align: center; padding: 6px;">友達を招待リンクから追加すると個別指定できます</div>';
+            } else {
+              friendsListContainer.innerHTML = friends.map(f => {
+                const checked = preselectedFriendId === f.id ? 'checked' : '';
+                return `
+                  <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer; padding: 4px; border-radius: 6px; background: rgba(0,0,0,0.02);">
+                    <input type="checkbox" name="target-friend-checkbox" value="${f.id}" ${checked} style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px;">
+                      ${UI.renderAvatarHtml(f.avatar || '😊', 22)}
+                      <span>${sanitize(f.name)}</span>
+                    </span>
+                  </label>
+                `;
+              }).join('');
+            }
+          }
+
+          if (gid) {
+            this.setEventScope('group');
+          } else if (preselectedFriendId) {
+            this.setEventScope('friends');
+          } else {
+            this.setEventScope('all');
+          }
+
           const tomorrow = new Date(Date.now() + 86400000);
           const startStr = tomorrow.toISOString().slice(0, 10) + 'T19:00';
           document.getElementById('event-start').value = startStr;
@@ -3425,18 +3541,37 @@
           e.preventDefault();
           const title = document.getElementById('event-title').value.trim();
           if (!title) return;
-          const selectedGroupId = document.getElementById('event-group-select').value;
-          let selectedGroupName = '個別招待 / 全体';
-          if (selectedGroupId) {
+
+          const scope = document.getElementById('event-scope-val').value || 'all';
+          let selectedGroupId = null;
+          let selectedGroupName = '全体（すべての友達）';
+          let targetFriendIds = [];
+
+          if (scope === 'group') {
+            selectedGroupId = document.getElementById('event-group-select').value;
+            if (!selectedGroupId) {
+              alert('招待するグループを選択してください。');
+              return;
+            }
             const grp = StorageManager.getGroupById(selectedGroupId);
             if (grp) selectedGroupName = grp.name;
+          } else if (scope === 'friends') {
+            const checkedBoxes = Array.from(document.querySelectorAll('input[name="target-friend-checkbox"]:checked'));
+            targetFriendIds = checkedBoxes.map(cb => cb.value);
+            if (targetFriendIds.length === 0) {
+              alert('招待する友達を1人以上選択してください。');
+              return;
+            }
+            selectedGroupName = `特定の友達 (${targetFriendIds.length}名)`;
           }
 
           const newEv = StorageManager.addEvent({
             title: title,
             category: document.getElementById('event-category').value,
-            groupId: selectedGroupId || null,
+            scope: scope,
+            groupId: selectedGroupId,
             groupName: selectedGroupName,
+            targetFriendIds: targetFriendIds,
             location: document.getElementById('event-location').value.trim(),
             startDateTime: document.getElementById('event-start').value,
             endDateTime: document.getElementById('event-end').value,
@@ -3445,7 +3580,7 @@
           });
           this.closeModal('modal-new-event');
           document.getElementById('form-new-event').reset();
-          this.showToast('✨ 予定を作成しました！');
+          this.showToast('✨ 予定を作成して招待しました！');
           this.renderEvents();
         }
 

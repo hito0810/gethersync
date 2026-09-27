@@ -178,13 +178,19 @@ const server = http.createServer((req, res) => {
     // 1. 自分が作成者
     // 2. 出欠リスト（attendees）に自分が含まれている
     // 3. グループ指定予定の場合: グループメンバーに含まれている
-    // 4. 全体/個別招待の予定の場合: 作成者が自分の友達リストにいる、または作成者の友達リストに自分がいる
+    // 4. 特定の友達指定予定の場合: targetFriendIds に自分が含まれている
+    // 5. 全体公開予定の場合: 作成者が自分の友達リストにいる、または作成者の友達リストに自分がいる
     const myEvents = (memoryDB.events || []).filter(e => {
       if (e.createdById === userId) return true;
       if (e.attendees && e.attendees.some(a => a.friendId === userId)) return true;
-      if (e.groupId) {
+      if (e.scope === 'group' || e.groupId) {
+        if (!e.groupId) return false;
         const grp = (memoryDB.groups || []).find(g => g.id === e.groupId);
         if (grp && Array.isArray(grp.memberIds) && grp.memberIds.includes(userId)) return true;
+        return false;
+      }
+      if (e.scope === 'friends') {
+        if (Array.isArray(e.targetFriendIds) && e.targetFriendIds.includes(userId)) return true;
         return false;
       }
       if (myFriendIds.includes(e.createdById)) return true;
