@@ -1075,7 +1075,7 @@
           <div class="section-head-title">
             <span>📅</span> <span>今日の予定</span>
           </div>
-          <a class="section-see-all" onclick="window.App.setFilter('all')">
+          <a class="section-see-all" onclick="window.App.openTodayEventsListModal()">
             すべて見る <span style="font-size: 11px;">❯</span>
           </a>
         </div>
@@ -1162,6 +1162,19 @@
   </nav>
 
   <!-- MODALS -->
+  <!-- 0. 今日の予定一覧モーダル -->
+  <div id="modal-today-events-list" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="today-events-modal-title">📅 今日の予定一覧</h3>
+        <button class="btn-icon" onclick="window.App.closeModal('modal-today-events-list')">✕</button>
+      </div>
+      <div id="today-events-list-content" style="margin-top: 10px;">
+        <!-- 今日の予定一覧が動的描画されます -->
+      </div>
+    </div>
+  </div>
+
   <div id="modal-new-event" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
@@ -3082,6 +3095,66 @@
           container.appendChild(img);
         }
 
+        // 日付が今日かどうか判定
+        isSameDateAsToday(dateStr) {
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
+          const today = new Date();
+          return d.getFullYear() === today.getFullYear() &&
+                 d.getMonth() === today.getMonth() &&
+                 d.getDate() === today.getDate();
+        },
+
+        // --- 今日の予定一覧モーダル（すべて見る用） ---
+        openTodayEventsListModal() {
+          const me = StorageManager.getCurrentUser();
+          const allGroups = StorageManager.getGroups();
+          let allEvents = StorageManager.getEvents();
+
+          allEvents = allEvents.filter(e => {
+            if (!e.groupId) return true;
+            if (e.createdById === me.id) return true;
+            if (e.attendees && e.attendees.some(a => a.friendId === me.id || a.name === me.name)) return true;
+            const grp = allGroups.find(g => g.id === e.groupId);
+            if (grp && grp.memberIds && grp.memberIds.includes(me.id)) return true;
+            return false;
+          });
+
+          const todayEvents = allEvents.filter(e => this.isSameDateAsToday(e.startDateTime));
+          const container = document.getElementById('today-events-list-content');
+          if (!container) return;
+
+          const titleEl = document.getElementById('today-events-modal-title');
+          const now = new Date();
+          const days = ['日', '月', '火', '水', '木', '金', '土'];
+          if (titleEl) {
+            titleEl.textContent = `📅 今日の予定一覧 (${now.getMonth() + 1}/${now.getDate()} ${days[now.getDay()]})`;
+          }
+
+          if (todayEvents.length === 0) {
+            container.innerHTML = `
+              <div style="text-align: center; padding: 32px 16px;">
+                <div style="font-size: 36px; margin-bottom: 8px;">📅</div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 4px;">今日開催の予定はありません</h4>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">友達を誘って新しい予定を作成しましょう！</p>
+                <button class="btn btn-primary btn-sm" onclick="window.App.closeModal('modal-today-events-list'); window.App.openNewEventModal();">＋ 予定を作る</button>
+              </div>
+            `;
+          } else {
+            container.innerHTML = `
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${todayEvents.map(e => `
+                  <div onclick="window.App.closeModal('modal-today-events-list'); window.App.openEventDetail('${e.id}');">
+                    ${UI.renderOngoingItem(e, me)}
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+
+          this.openModal('modal-today-events-list');
+        },
+
         // --- 予定一覧（3つのセクションを画像通りにレンダリング） ---
         renderEvents() {
           const me = StorageManager.getCurrentUser();
@@ -3098,19 +3171,20 @@
             return false;
           });
 
-          // 1. 今日の予定セクション
+          // 1. 今日の予定セクション（今日開催の予定のみを対象）
           const todayContainer = document.getElementById('today-event-container');
           if (todayContainer) {
-            if (allEvents.length > 0) {
-              // 1件目のイベントを今日の予定としてフィーチャー表示
-              const featuredEvent = allEvents[0];
+            const todayEvents = allEvents.filter(e => this.isSameDateAsToday(e.startDateTime));
+            if (todayEvents.length > 0) {
+              // 今日開催の先頭イベントをフィーチャーカード表示
+              const featuredEvent = todayEvents[0];
               todayContainer.innerHTML = UI.renderTodayCard(featuredEvent, me);
             } else {
               todayContainer.innerHTML = `
                 <div style="text-align:center; padding: 24px 16px; background:#ffffff; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); border:1px dashed #e2e8f0;">
-                  <div style="font-size:32px; margin-bottom:6px;">🏕️</div>
-                  <div style="font-size:14px; font-weight:800; color:#1e293b; margin-bottom:4px;">今日の予定はまだありません</div>
-                  <p style="font-size:12px; color:#64748b; margin-bottom:12px;">「＋ 予定を作る」から新しい予定を計画しましょう！</p>
+                  <div style="font-size:32px; margin-bottom:6px;">📅</div>
+                  <div style="font-size:14px; font-weight:800; color:#1e293b; margin-bottom:4px;">今日開催の予定はありません</div>
+                  <p style="font-size:12px; color:#64748b; margin-bottom:12px;">友達を誘って次の予定を決めよう！</p>
                   <button class="btn btn-primary btn-sm" onclick="window.App.openNewEventModal()">＋ 予定を作る</button>
                 </div>
               `;
@@ -3122,13 +3196,10 @@
           if (invitesContainer) {
             // 友達が作成したイベント、または2件目以降のイベント
             const inviteList = allEvents.filter(e => e.createdById !== me.id);
-            const displayInvites = inviteList.length > 0 ? inviteList.slice(0, 2) : allEvents.slice(1, 3);
+            const displayInvites = inviteList.length > 0 ? inviteList.slice(0, 2) : allEvents.slice(0, 2);
             
             if (displayInvites.length > 0) {
               invitesContainer.innerHTML = displayInvites.map((e, idx) => UI.renderInviteCard(e, me, idx)).join('');
-            } else if (allEvents.length > 0) {
-              // 1件しかない場合はそのイベントをお誘いカードとしても配置
-              invitesContainer.innerHTML = [allEvents[0]].map((e, idx) => UI.renderInviteCard(e, me, idx)).join('');
             } else {
               invitesContainer.innerHTML = `
                 <div style="grid-column: 1/-1; text-align:center; padding:18px; background:#ffffff; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); font-size:12px; color:#64748b;">
