@@ -1175,6 +1175,23 @@
     </div>
   </div>
 
+  <!-- 0.5. お知らせ・新着通知モーダル -->
+  <div id="modal-notifications" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🔔 お知らせ・新着通知</h3>
+        <button class="btn-icon" onclick="window.App.closeModal('modal-notifications')">✕</button>
+      </div>
+      <div id="notification-modal-list" style="margin-top: 10px; max-height: 380px; overflow-y: auto;">
+        <!-- 通知リストが動的描画されます -->
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+        <button class="btn btn-secondary btn-sm" onclick="window.App.clearAllNotifications()">すべてクリア</button>
+        <button class="btn btn-primary btn-sm" onclick="window.App.closeModal('modal-notifications')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-new-event" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
@@ -2289,6 +2306,12 @@
               local[idx] = { ...local[idx], ...sf };
             } else {
               local.push(sf);
+              // 🤝 新しい友達追加通知
+              this.addNotification({
+                type: 'friend',
+                title: '🤝 友達がつながりました！',
+                message: `${sf.name || '新しい友達'}さんと友達になりました`
+              });
             }
           });
           this.saveFriends(local);
@@ -2312,6 +2335,7 @@
         mergeEvents(serverEvents) {
           if (!Array.isArray(serverEvents)) return;
           const deletedIds = this.getDeletedEventIds();
+          const me = this.getCurrentUser();
           // 削除済みIDに含まれるものはサーバーから来ても除外
           const validServerEvents = serverEvents.filter(se => se && se.id && !deletedIds.includes(se.id));
           const serverEventMap = new Map(validServerEvents.map(se => [se.id, se]));
@@ -2323,9 +2347,35 @@
           validServerEvents.forEach(se => {
             const localItem = local.find(le => le.id === se.id);
             if (localItem) {
+              // 自分が作成者の予定で新しい参加表明があったか通知
+              if (se.createdById === me.id && Array.isArray(se.attendees)) {
+                const oldAtt = Array.isArray(localItem.attendees) ? localItem.attendees : [];
+                se.attendees.forEach(a => {
+                  if (a.friendId !== me.id) {
+                    const prev = oldAtt.find(x => x.friendId === a.friendId);
+                    if ((!prev && (a.status === 'going' || a.status === 'declined')) || (prev && prev.status !== a.status && a.status !== 'unanswered')) {
+                      this.addNotification({
+                        type: 'rsvp',
+                        title: a.status === 'going' ? '🎉 参加表明が届きました！' : '💬 出欠回答がありました',
+                        message: `${a.name || '友達'}さんが「${se.title}」に${a.status === 'going' ? '参加' : '不参加'}回答しました`,
+                        eventId: se.id
+                      });
+                    }
+                  }
+                });
+              }
               merged.push({ ...localItem, ...se });
             } else {
               merged.push(se);
+              // 友達が新しく予定を作成した時の通知
+              if (se.createdById !== me.id) {
+                this.addNotification({
+                  type: 'event',
+                  title: '📅 新しいお誘いが届きました！',
+                  message: `${se.createdByName || '友達'}さんが「${se.title}」を作成しました`,
+                  eventId: se.id
+                });
+              }
             }
           });
 
@@ -2343,12 +2393,52 @@
           this.saveEvents(merged);
         },
 
-        // --- 通知 ---
-        getNotifications() { return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]'); },
+        // --- 🔔 通知マネージャー（見たら消える未読管理＆7日自動消去） ---
+        getNotifications() {
+          const list = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
+          const now = Date.now();
+          const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+          return list.filter(n => {
+            if (!n || !n.id) return false;
+            const t = n.timestamp ? new Date(n.timestamp).getTime() : 0;
+            if (t && (now - t > SEVEN_DAYS)) return false;
+            return true;
+          });
+        },
+
+        getUnreadNotificationCount() {
+          const notifs = this.getNotifications();
+          return notifs.filter(n => !n.read).length;
+        },
+
         addNotification(n) {
           const notifs = this.getNotifications();
-          notifs.unshift({ id: 'n_' + Date.now(), title: n.title, message: n.message, eventId: n.eventId, time: 'たった今' });
+          // 重複通知の抑止
+          if (n.eventId && notifs.some(x => x.eventId === n.eventId && x.type === n.type)) {
+            return;
+          }
+          notifs.unshift({
+            id: 'n_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            type: n.type || 'info',
+            title: n.title,
+            message: n.message,
+            eventId: n.eventId || null,
+            time: n.time || 'たった今',
+            timestamp: new Date().toISOString(),
+            read: false
+          });
+          if (notifs.length > 50) notifs.pop();
           SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
+        },
+
+        markAllNotificationsAsRead() {
+          const notifs = this.getNotifications();
+          notifs.forEach(n => { n.read = true; });
+          SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
+        },
+
+        clearAllNotifications() {
+          SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
         },
 
         resetToDefault() {
@@ -2781,9 +2871,69 @@
 
         renderAll() {
           this.updateUserBadge();
+          this.updateNotificationBadge();
           this.renderEvents();
           this.renderGroups();
           this.renderFriends();
+        }
+
+        // --- 🔔 お知らせ・通知マネージャー ---
+        updateNotificationBadge() {
+          const badge = document.querySelector('.unread-badge-dot');
+          if (!badge) return;
+          const unreadCount = StorageManager.getUnreadNotificationCount();
+          badge.style.display = unreadCount > 0 ? 'block' : 'none';
+        }
+
+        showNotificationInfo() {
+          this.renderNotificationsModalList();
+          StorageManager.markAllNotificationsAsRead();
+          this.updateNotificationBadge();
+          this.openModal('modal-notifications');
+        }
+
+        renderNotificationsModalList() {
+          const container = document.getElementById('notification-modal-list');
+          if (!container) return;
+          const notifs = StorageManager.getNotifications();
+
+          if (notifs.length === 0) {
+            container.innerHTML = `
+              <div style="text-align: center; padding: 32px 16px; color: var(--text-secondary);">
+                <div style="font-size: 32px; margin-bottom: 6px;">🔔</div>
+                <div style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">新しいお知らせはありません</div>
+                <p style="font-size: 12px;">友達からの招待や回答が届くとここに表示されます</p>
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${notifs.map(n => `
+                <div style="padding: 12px 14px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; cursor: ${n.eventId ? 'pointer' : 'default'}; transition: all 0.2s;"
+                     ${n.eventId ? `onclick="window.App.closeModal('modal-notifications'); window.App.openEventDetail('${n.eventId}');"` : ''}>
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 2px;">
+                      ${sanitize(n.title)}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                      ${sanitize(n.message)}
+                    </div>
+                    ${n.eventId ? `<div style="font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 4px;">👉 タップして予定を確認</div>` : ''}
+                  </div>
+                  <span style="font-size: 10px; color: #94a3b8; white-space: nowrap;">${n.time || ''}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        clearAllNotifications() {
+          StorageManager.clearAllNotifications();
+          this.updateNotificationBadge();
+          this.renderNotificationsModalList();
+          this.showToast('🗑️ お知らせをすべてクリアしました');
         }
 
         updateUserBadge() {
