@@ -2128,7 +2128,30 @@
         },
 
         // --- 予定（イベント）管理 ---
-        getEvents() { return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.EVENTS) || '[]'); },
+        getEvents() {
+          const list = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.EVENTS) || '[]');
+          const now = Date.now();
+          const ONE_HOUR = 60 * 60 * 1000;
+          const deletedIds = this.getDeletedEventIds();
+
+          return list.filter(e => {
+            if (!e || !e.id) return false;
+            if (deletedIds.includes(e.id)) return false;
+
+            let endTimestamp = 0;
+            if (e.endDateTime) {
+              endTimestamp = new Date(e.endDateTime).getTime();
+            } else if (e.startDateTime) {
+              endTimestamp = new Date(e.startDateTime).getTime() + (2 * 60 * 60 * 1000);
+            }
+
+            if (endTimestamp && !isNaN(endTimestamp) && (now - endTimestamp >= ONE_HOUR)) {
+              this.addDeletedEventId(e.id);
+              return false;
+            }
+            return true;
+          });
+        },
         getEventById(id) { return this.getEvents().find(e => e.id === id); },
         saveEvents(e) { SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(e)); },
 

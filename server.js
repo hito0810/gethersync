@@ -36,8 +36,53 @@ function initDB() {
   } else {
     fs.writeFileSync(DB_FILE, JSON.stringify(memoryDB, null, 2), 'utf-8');
   }
+  cleanExpiredEvents();
+}
+
+// --- ⌛ 終了日時を1時間過ぎた予定の自動削除マネージャー ---
+function cleanExpiredEvents() {
+  if (!Array.isArray(memoryDB.events)) return;
+  const now = Date.now();
+  const ONE_HOUR = 60 * 60 * 1000;
+
+  const activeEvents = [];
+  const newlyDeletedIds = [];
+
+  memoryDB.events.forEach(e => {
+    let endTimestamp = 0;
+    if (e.endDateTime) {
+      endTimestamp = new Date(e.endDateTime).getTime();
+    } else if (e.startDateTime) {
+      // 終了日時の指定がない場合は開始から2時間後を終了日時と判定
+      endTimestamp = new Date(e.startDateTime).getTime() + (2 * 60 * 60 * 1000);
+    }
+
+    if (endTimestamp && !isNaN(endTimestamp) && (now - endTimestamp >= ONE_HOUR)) {
+      newlyDeletedIds.push(e.id);
+    } else {
+      activeEvents.push(e);
+    }
+  });
+
+  if (newlyDeletedIds.length > 0) {
+    if (!Array.isArray(memoryDB.deletedEventIds)) memoryDB.deletedEventIds = [];
+    newlyDeletedIds.forEach(id => {
+      if (!memoryDB.deletedEventIds.includes(id)) {
+        memoryDB.deletedEventIds.push(id);
+      }
+    });
+    if (memoryDB.deletedEventIds.length > 500) {
+      memoryDB.deletedEventIds = memoryDB.deletedEventIds.slice(-500);
+    }
+    memoryDB.events = activeEvents;
+    scheduleSave();
+    broadcastUpdate('event_expired_cleanup');
+  }
 }
 initDB();
+
+// 1分ごとに自動期限切れチェック
+setInterval(cleanExpiredEvents, 60 * 1000);
 
 // 非同期デバウンス保存（1秒間に何千回書き込みがあってもディスクI/Oが詰まらない）
 let saveTimeout = null;
