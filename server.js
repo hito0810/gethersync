@@ -39,6 +39,21 @@ function initDB() {
   cleanExpiredEvents();
 }
 
+// 日本時間 (JST: UTC+9) に対応した正確なタイムスタンプ変換
+function parseDateJST(dateStr) {
+  if (!dateStr) return 0;
+  try {
+    if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
+      const d = new Date(dateStr + '+09:00');
+      if (!isNaN(d.getTime())) return d.getTime();
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  } catch (e) {
+    return 0;
+  }
+}
+
 // --- ⌛ 終了日時を1時間過ぎた予定の自動削除マネージャー ---
 function cleanExpiredEvents() {
   if (!Array.isArray(memoryDB.events)) return;
@@ -51,13 +66,13 @@ function cleanExpiredEvents() {
   memoryDB.events.forEach(e => {
     let endTimestamp = 0;
     if (e.endDateTime) {
-      endTimestamp = new Date(e.endDateTime).getTime();
+      endTimestamp = parseDateJST(e.endDateTime);
     } else if (e.startDateTime) {
       // 終了日時の指定がない場合は開始から2時間後を終了日時と判定
-      endTimestamp = new Date(e.startDateTime).getTime() + (2 * 60 * 60 * 1000);
+      endTimestamp = parseDateJST(e.startDateTime) + (2 * 60 * 60 * 1000);
     }
 
-    if (endTimestamp && !isNaN(endTimestamp) && (now - endTimestamp >= ONE_HOUR)) {
+    if (endTimestamp > 0 && (now - endTimestamp >= ONE_HOUR)) {
       newlyDeletedIds.push(e.id);
     } else {
       activeEvents.push(e);
@@ -222,25 +237,26 @@ const server = http.createServer((req, res) => {
     // 予定（イベント）のフィルタリング:
     // 1. 自分が作成者
     // 2. 出欠リスト（attendees）に自分が含まれている
-    // 3. グループ指定予定の場合: グループメンバーに含まれている
-    // 4. 特定の友達指定予定の場合: targetFriendIds に自分が含まれている
-    // 5. 全体公開予定の場合: 作成者が自分の友達リストにいる、または作成者の友達リストに自分がいる
+    // 3. 特定の友達指定予定の場合: targetFriendIds または attendees に自分が含まれている
+    // 4. グループ指定予定の場合: グループメンバーに含まれている
+    // 5. 全体公開予定の場合: 友達関係にある、または全体予定として共有
     const myEvents = (memoryDB.events || []).filter(e => {
       if (e.createdById === userId) return true;
       if (e.attendees && e.attendees.some(a => a.friendId === userId)) return true;
-      if (e.scope === 'group' || e.groupId) {
-        if (!e.groupId) return false;
-        const grp = (memoryDB.groups || []).find(g => g.id === e.groupId);
-        if (grp && Array.isArray(grp.memberIds) && grp.memberIds.includes(userId)) return true;
-        return false;
-      }
       if (e.scope === 'friends') {
         if (Array.isArray(e.targetFriendIds) && e.targetFriendIds.includes(userId)) return true;
         return false;
       }
+      if (e.scope === 'group' && e.groupId) {
+        const grp = (memoryDB.groups || []).find(g => g.id === e.groupId);
+        if (grp && Array.isArray(grp.memberIds) && grp.memberIds.includes(userId)) return true;
+        return false;
+      }
+      // 全体公開 (scope: 'all' または未設定)
       if (myFriendIds.includes(e.createdById)) return true;
       const creatorFriends = memoryDB.userFriends[e.createdById] || [];
       if (creatorFriends.some(f => f.id === userId)) return true;
+      if (!e.scope || e.scope === 'all') return true;
       return false;
     });
 

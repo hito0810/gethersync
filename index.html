@@ -2162,8 +2162,8 @@
               endTimestamp = new Date(e.startDateTime).getTime() + (2 * 60 * 60 * 1000);
             }
 
-            if (endTimestamp && !isNaN(endTimestamp) && (now - endTimestamp >= ONE_HOUR)) {
-              this.addDeletedEventId(e.id);
+            // 終了日時から1時間経過した古いイベントは一覧から除外（手動削除IDとは区別）
+            if (endTimestamp > 0 && !isNaN(endTimestamp) && (now - endTimestamp >= ONE_HOUR)) {
               return false;
             }
             return true;
