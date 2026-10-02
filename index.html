@@ -686,21 +686,21 @@
       text-overflow: ellipsis;
     }
 
-    /* === Floating Bottom Nav (iOS / LINE Style) === */
+    /* === Floating Bottom Nav (iOS / LINE Style - 薄黄緑色テーマ) === */
     .floating-bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: var(--bg-glass);
+      background: linear-gradient(180deg, rgba(243, 252, 238, 0.96) 0%, rgba(232, 248, 224, 0.98) 100%);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      border-top: 1px solid rgba(132, 204, 22, 0.25);
       display: flex;
       justify-content: space-around;
       padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
       z-index: 100;
-      box-shadow: var(--shadow-bottom-nav);
+      box-shadow: 0 -4px 20px rgba(84, 130, 53, 0.08);
     }
 
     .bottom-tab-item {
@@ -709,7 +709,7 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
-      color: #94a3b8;
+      color: #526b52;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
@@ -731,12 +731,12 @@
     }
 
     .bottom-tab-item.active {
-      color: var(--primary);
+      color: #008a50;
     }
 
     .bottom-tab-item.active .bottom-tab-icon {
-      background: var(--primary-light);
-      color: var(--primary);
+      background: #d4f2ce;
+      color: #008a50;
     }
 
     /* === Views Switching === */
