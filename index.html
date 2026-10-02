@@ -2379,13 +2379,12 @@
             }
           });
 
-          // ローカルにあってサーバーにまだ反映されていない可能性のある新規作成直後（10秒以内）のイベントのみ保持
-          const now = Date.now();
+          // ローカルで作成した有効な予定は消さずに保持し、サーバーへ同期
           local.forEach(le => {
             if (!serverEventMap.has(le.id)) {
-              const createdAt = le.createdAt ? new Date(le.createdAt).getTime() : 0;
-              if (now - createdAt < 10000) {
+              if (le.createdById === me.id) {
                 merged.unshift(le);
+                ServerApi.saveEvent(le).catch(() => { });
               }
             }
           });
