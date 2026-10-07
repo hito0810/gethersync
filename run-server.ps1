@@ -115,6 +115,9 @@ while ($listener.IsListening) {
         $response.Headers.Add("Access-Control-Allow-Origin", "*")
         $response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         $response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
+        $response.Headers.Add("X-Content-Type-Options", "nosniff")
+        $response.Headers.Add("X-Frame-Options", "SAMEORIGIN")
+        $response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin")
 
         if ($request.HttpMethod -eq "OPTIONS") {
             $response.StatusCode = 204
@@ -146,21 +149,48 @@ while ($listener.IsListening) {
                     }
                 }
             }
+            $myFriendIds = @($myFriends | ForEach-Object { $_.id })
 
             $myGroups = @($script:memoryDB.groups | Where-Object {
                 $_.createdById -eq $userId -or ($_.memberIds -contains $userId)
             })
 
-            $myEvents = @($script:memoryDB.events | Where-Object {
-                $e = $_
-                if ($e.createdById -eq $userId) { return $true }
-                if ($e.attendees -and ($e.attendees | Where-Object { $_.friendId -eq $userId })) { return $true }
-                if ($e.groupId) {
+            # 🔒 予定（イベント）のプライバシー保護フィルター:
+            # 1. 自分が作成者
+            # 2. 出欠リスト（attendees）に含まれている
+            # 3. 友達限定（targetFriendIds）に含まれている
+            # 4. グループ限定（メンバーに含まれている）
+            # 5. 全体の友達: 作成者と友達関係にある場合のみ許可（赤の他人には非公開）
+            $myEvents = [System.Collections.ArrayList]@()
+            foreach ($e in $script:memoryDB.events) {
+                $isAllowed = $false
+                if ($e.createdById -eq $userId -or $e.createdById -eq 'user_me') {
+                    $isAllowed = $true
+                } elseif ($e.attendees -and ($e.attendees | Where-Object { $_.friendId -eq $userId })) {
+                    $isAllowed = $true
+                } elseif ($e.scope -eq 'friends') {
+                    if ($e.targetFriendIds -and ($e.targetFriendIds -contains $userId)) {
+                        $isAllowed = $true
+                    }
+                } elseif ($e.scope -eq 'group' -and $e.groupId) {
                     $g = $script:memoryDB.groups | Where-Object { $_.id -eq $e.groupId }
-                    if ($g -and $g.memberIds -contains $userId) { return $true }
+                    if ($g -and $g.memberIds -contains $userId) {
+                        $isAllowed = $true
+                    }
+                } else {
+                    if ($myFriendIds -contains $e.createdById) {
+                        $isAllowed = $true
+                    } elseif ($e.createdById -and $script:memoryDB.userFriends.ContainsKey($e.createdById)) {
+                        $cFriends = @($script:memoryDB.userFriends[$e.createdById])
+                        if ($cFriends | Where-Object { $_.id -eq $userId }) {
+                            $isAllowed = $true
+                        }
+                    }
                 }
-                return $false
-            })
+                if ($isAllowed) {
+                    [void]$myEvents.Add($e)
+                }
+            }
 
             Send-JsonResponse $response @{
                 epoch = $script:memoryDB.epoch

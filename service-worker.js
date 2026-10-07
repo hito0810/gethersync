@@ -1,11 +1,8 @@
-const CACHE_NAME = 'gathersync-v12';
+const CACHE_NAME = 'gathersync-v13';
 const ASSETS = [
   './',
   './index.html',
-  './css/style.css',
-  './js/app.js',
-  './js/models.js',
-  './js/calendar.js',
+  './mobile.html',
   './manifest.json'
 ];
 
@@ -24,7 +21,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // ネットワーク優先で常に最新のHTML/JSを取得
+  // ネットワーク優先で常に最新のHTML/JSを取得し、オフライン時にキャッシュを使用
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );

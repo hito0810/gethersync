@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'database.json');
+// Vercel等のサーバーレス環境では /tmp のみ書き込み可能なためフォールバック
+const DB_FILE = process.env.VERCEL ? path.join('/tmp', 'database.json') : path.join(__dirname, 'database.json');
 
 // --- インメモリ高速キャッシュ ＆ データベース管理 ---
 let memoryDB = {
@@ -34,7 +35,11 @@ function initDB() {
       console.error('Error loading DB, initializing new:', e);
     }
   } else {
-    fs.writeFileSync(DB_FILE, JSON.stringify(memoryDB, null, 2), 'utf-8');
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(memoryDB, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Could not initialize DB file on disk:', e.message);
+    }
   }
   cleanExpiredEvents();
 }
@@ -99,7 +104,7 @@ initDB();
 // 1分ごとに自動期限切れチェック
 setInterval(cleanExpiredEvents, 60 * 1000);
 
-// 非同期デバウンス保存（1秒間に何千回書き込みがあってもディスクI/Oが詰まらない）
+// 非同期デバウンス保存（高負荷時もディスクI/Oが詰まらない）
 let saveTimeout = null;
 function scheduleSave() {
   if (saveTimeout) clearTimeout(saveTimeout);
@@ -107,18 +112,16 @@ function scheduleSave() {
     fs.writeFile(DB_FILE, JSON.stringify(memoryDB, null, 2), 'utf-8', (err) => {
       if (err) console.error('Error saving DB asynchronously:', err);
     });
-  }, 100); // 100msデバウンスバッチ
+  }, 100);
 }
 
 // --- SSE (Server-Sent Events) リアルタイム配信マネージャー ---
-// 接続中のクライアント一覧: Set of { res, userId }
 const sseClients = new Set();
 
 function broadcastUpdate(reason = 'update', targetUserId = null) {
   const payload = JSON.stringify({ type: 'sync', reason, timestamp: Date.now() });
   for (const client of sseClients) {
     try {
-      // 全体通知、または特定ユーザー宛て
       if (!targetUserId || client.userId === targetUserId) {
         client.res.write(`data: ${payload}\n\n`);
       }
@@ -139,6 +142,62 @@ setInterval(() => {
   }
 }, 15000);
 
+// --- 🛡️ セキュリティ ＆ レートリミッター（DoS/スパム防止） ---
+const rateLimits = new Map();
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1分単位
+  const maxRequests = 200; // 1分間に200リクエストまで許容
+  let entry = rateLimits.get(ip);
+  if (!entry || now > entry.resetTime) {
+    entry = { count: 1, resetTime: now + windowMs };
+    rateLimits.set(ip, entry);
+    return true;
+  }
+  entry.count++;
+  return entry.count <= maxRequests;
+}
+
+// 定期的に古いIPレート制限レコードを掃除
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimits.entries()) {
+    if (now > entry.resetTime) {
+      rateLimits.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
+// リクエストボディ安全読み取りヘルパー（サイズ上限2MBでメモリパンク防止）
+function readJsonBody(req, res, maxBytes = 2 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'リクエストデータが大きすぎます（最大2MB）' }));
+        req.destroy();
+        reject(new Error('Payload Too Large'));
+        return;
+      }
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const parsed = body ? JSON.parse(body) : {};
+        resolve(parsed);
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: '無効なJSONフォーマットです' }));
+        reject(err);
+      }
+    });
+    req.on('error', err => reject(err));
+  });
+}
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -151,12 +210,23 @@ const MIME_TYPES = {
   '.ics': 'text/calendar; charset=utf-8'
 };
 
-const server = http.createServer((req, res) => {
-  // CORS & セキュリティヘッダー
+const server = http.createServer(async (req, res) => {
+  // レートリミット判定（SSEストリームは除外）
+  const clientIp = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress;
+  if (!req.url.startsWith('/api/events/stream') && !checkRateLimit(clientIp)) {
+    res.writeHead(429, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'リクエスト頻度が高すぎます。しばらく時間をおいて再試行してください。' }));
+    return;
+  }
+
+  // CORS & 高度なセキュリティヘッダー
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -195,7 +265,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // 🔒 ユーザーIDごとにプライバシーを完全分離（インメモリから0msで高速抽出）
+    // 🔒 ユーザーIDごとに友達関係・個人データを完全分離
     const rawFriends = memoryDB.userFriends[userId] || [];
     const myFriends = rawFriends.map(f => {
       const latestUser = memoryDB.users[f.id];
@@ -210,12 +280,12 @@ const server = http.createServer((req, res) => {
     });
     const myFriendIds = myFriends.map(f => f.id);
 
-    // 自分が作成者、またはメンバーに含まれているグループのみ
+    // 自分が作成者、またはメンバーに含まれているグループのみ抽出
     const myGroups = (memoryDB.groups || []).filter(g =>
       g.createdById === userId || (Array.isArray(g.memberIds) && g.memberIds.includes(userId))
     );
 
-    // グループ情報の充実化（全メンバーの名前・アバターを解決して同期）
+    // グループ情報の充実化（全メンバーの名前・アバターを解決）
     const enrichedGroups = myGroups.map(g => {
       const membersInfo = (g.memberIds || []).map(mid => {
         if (mid === userId) {
@@ -224,7 +294,6 @@ const server = http.createServer((req, res) => {
         }
         const u = memoryDB.users[mid];
         if (u) return { id: mid, name: u.name, avatar: u.avatar || '😊' };
-        // 友達リストからも逆引き
         for (const ownerId in memoryDB.userFriends) {
           const found = (memoryDB.userFriends[ownerId] || []).find(f => f.id === mid);
           if (found) return { id: mid, name: found.name, avatar: found.avatar || '😊' };
@@ -234,29 +303,40 @@ const server = http.createServer((req, res) => {
       return { ...g, membersInfo };
     });
 
-    // 予定（イベント）のフィルタリング:
-    // 1. 自分が作成者
+    // 🔒 予定（イベント）の厳格なプライバシーフィルタリング:
+    // 1. 自分が作成者（または初期user_me）
     // 2. 出欠リスト（attendees）に自分が含まれている
-    // 3. 特定の友達指定予定の場合: targetFriendIds または attendees に自分が含まれている
-    // 4. グループ指定予定の場合: グループメンバーに含まれている
-    // 5. 全体公開予定の場合: 友達関係にある、または全体予定として共有
+    // 3. 特定の友達限定（scope: 'friends'）: targetFriendIds に自分が含まれている
+    // 4. グループ限定（scope: 'group'）: 自分がそのグループのメンバーである
+    // 5. 全体の友達（scope: 'all' または未指定）: 作成者と友達関係にある場合のみ表示！赤の他人には絶対に漏洩しない！
     const myEvents = (memoryDB.events || []).filter(e => {
-      if (e.createdById === userId) return true;
+      // 1. 自分が作成者
+      if (e.createdById === userId || e.createdById === 'user_me') return true;
+
+      // 2. 出欠リストに自分が含まれている
       if (e.attendees && e.attendees.some(a => a.friendId === userId)) return true;
+
+      // 3. 友達限定指定
       if (e.scope === 'friends') {
         if (Array.isArray(e.targetFriendIds) && e.targetFriendIds.includes(userId)) return true;
         return false;
       }
+
+      // 4. グループ限定指定
       if (e.scope === 'group' && e.groupId) {
         const grp = (memoryDB.groups || []).find(g => g.id === e.groupId);
         if (grp && Array.isArray(grp.memberIds) && grp.memberIds.includes(userId)) return true;
         return false;
       }
-      // 全体公開 (scope: 'all' または未設定)
-      if (myFriendIds.includes(e.createdById)) return true;
+
+      // 5. 全体の友達 (scope: 'all' または未設定)
+      // 作成者が自分の友達リストにある、または相手の友達リストに自分がいる場合のみ公開
+      const isFriend = myFriendIds.includes(e.createdById);
       const creatorFriends = memoryDB.userFriends[e.createdById] || [];
-      if (creatorFriends.some(f => f.id === userId)) return true;
-      if (!e.scope || e.scope === 'all') return true;
+      const isInCreatorFriends = creatorFriends.some(f => f.id === userId);
+      if (isFriend || isInCreatorFriends) return true;
+
+      // 赤の他人には一切見せない
       return false;
     });
 
@@ -273,331 +353,350 @@ const server = http.createServer((req, res) => {
 
   // --- API エンドポイント: 予定の単体保存 (POST /api/events/save) ---
   if (pathname === '/api/events/save' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const ev = JSON.parse(body);
-        if (ev && ev.id) {
-          // 明示的な個別保存の場合は削除済みリストから除外
-          if (Array.isArray(memoryDB.deletedEventIds)) {
-            memoryDB.deletedEventIds = memoryDB.deletedEventIds.filter(id => id !== ev.id);
+    try {
+      const ev = await readJsonBody(req, res);
+      if (ev && ev.id) {
+        const idx = memoryDB.events.findIndex(e => e.id === ev.id);
+        if (idx >= 0) {
+          const existing = memoryDB.events[idx];
+          // 🔒 作成者以外の不正上書き防止
+          if (existing.createdById && existing.createdById !== 'user_me' && ev.createdById && existing.createdById !== ev.createdById) {
+            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: '他のユーザーが作成した予定は直接変更できません' }));
+            return;
           }
-          const idx = memoryDB.events.findIndex(e => e.id === ev.id);
-          if (idx >= 0) {
-            memoryDB.events[idx] = ev;
-          } else {
-            memoryDB.events.unshift(ev);
-          }
-          scheduleSave();
-          broadcastUpdate('event_saved');
+          memoryDB.events[idx] = ev;
+        } else {
+          memoryDB.events.unshift(ev);
         }
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true, event: ev }));
-      } catch (e) {
+
+        // 明示的な個別保存の場合は削除済みリストから除外
+        if (Array.isArray(memoryDB.deletedEventIds)) {
+          memoryDB.deletedEventIds = memoryDB.deletedEventIds.filter(id => id !== ev.id);
+        }
+        scheduleSave();
+        broadcastUpdate('event_saved');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, event: ev }));
+    } catch (e) {
+      // readJsonBody内で既にレスポンス済みの場合はスキップ
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
   // --- API エンドポイント: ユーザー個別データ保存 (POST /api/sync) ---
   if (pathname === '/api/sync' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const incoming = JSON.parse(body);
-        const currentUid = incoming.user ? incoming.user.id : null;
+    try {
+      const incoming = await readJsonBody(req, res);
+      const currentUid = incoming.user ? incoming.user.id : null;
 
-        if (incoming.user && currentUid) {
-          memoryDB.users[currentUid] = incoming.user;
-          if (Array.isArray(incoming.friends)) {
-            if (!memoryDB.userFriends[currentUid]) memoryDB.userFriends[currentUid] = [];
-            incoming.friends.forEach(f => {
-              if (!f || !f.id || f.id === currentUid) return;
-              const idx = memoryDB.userFriends[currentUid].findIndex(df => df.id === f.id);
-              if (idx >= 0) memoryDB.userFriends[currentUid][idx] = f;
-              else memoryDB.userFriends[currentUid].push(f);
-            });
-          }
-        }
-
-        if (Array.isArray(incoming.groups)) {
-          incoming.groups.forEach(g => {
-            const idx = memoryDB.groups.findIndex(dg => dg.id === g.id);
-            if (idx >= 0) memoryDB.groups[idx] = g;
-            else memoryDB.groups.push(g);
+      if (incoming.user && currentUid) {
+        memoryDB.users[currentUid] = incoming.user;
+        if (Array.isArray(incoming.friends)) {
+          if (!memoryDB.userFriends[currentUid]) memoryDB.userFriends[currentUid] = [];
+          incoming.friends.forEach(f => {
+            if (!f || !f.id || f.id === currentUid) return;
+            const idx = memoryDB.userFriends[currentUid].findIndex(df => df.id === f.id);
+            if (idx >= 0) memoryDB.userFriends[currentUid][idx] = f;
+            else memoryDB.userFriends[currentUid].push(f);
           });
         }
+      }
 
-        if (Array.isArray(incoming.events)) {
-          const deletedIds = memoryDB.deletedEventIds || [];
-          incoming.events.forEach(e => {
-            if (!e || !e.id || deletedIds.includes(e.id)) return; // 削除済み予定は復活させない
-            const idx = memoryDB.events.findIndex(de => de.id === e.id);
-            if (idx >= 0) {
-              const existing = memoryDB.events[idx];
-              const mergedAttendees = [...(existing.attendees || [])];
-              (e.attendees || []).forEach(inAtt => {
-                const aIdx = mergedAttendees.findIndex(ma => ma.friendId === inAtt.friendId);
-                if (aIdx >= 0) {
-                  mergedAttendees[aIdx] = inAtt;
-                } else {
-                  mergedAttendees.push(inAtt);
-                }
-              });
-              memoryDB.events[idx] = { ...existing, ...e, attendees: mergedAttendees };
-            } else {
-              memoryDB.events.unshift(e);
+      // グループの安全なマージ
+      if (Array.isArray(incoming.groups)) {
+        incoming.groups.forEach(g => {
+          if (!g || !g.id) return;
+          const idx = memoryDB.groups.findIndex(dg => dg.id === g.id);
+          if (idx >= 0) {
+            const existing = memoryDB.groups[idx];
+            const isMember = (existing.memberIds || []).includes(currentUid) || existing.createdById === currentUid;
+            if (isMember) {
+              memoryDB.groups[idx] = g;
             }
-          });
-        }
+          } else {
+            if (!g.createdById && currentUid) g.createdById = currentUid;
+            memoryDB.groups.push(g);
+          }
+        });
+      }
 
-        scheduleSave();
-        broadcastUpdate('sync');
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
+      // 予定の安全なマージ
+      if (Array.isArray(incoming.events)) {
+        const deletedIds = memoryDB.deletedEventIds || [];
+        incoming.events.forEach(e => {
+          if (!e || !e.id || deletedIds.includes(e.id)) return;
+          const idx = memoryDB.events.findIndex(de => de.id === e.id);
+          if (idx >= 0) {
+            const existing = memoryDB.events[idx];
+            const mergedAttendees = [...(existing.attendees || [])];
+            (e.attendees || []).forEach(inAtt => {
+              const aIdx = mergedAttendees.findIndex(ma => ma.friendId === inAtt.friendId);
+              if (aIdx >= 0) {
+                mergedAttendees[aIdx] = inAtt;
+              } else {
+                mergedAttendees.push(inAtt);
+              }
+            });
+
+            // 作成者本人でない場合は出欠回答のみマージ許可（タイトルや詳細の改ざん防止）
+            if (existing.createdById && existing.createdById !== currentUid && existing.createdById !== 'user_me') {
+              memoryDB.events[idx] = { ...existing, attendees: mergedAttendees };
+            } else {
+              memoryDB.events[idx] = { ...existing, ...e, attendees: mergedAttendees };
+            }
+          } else {
+            if (!e.createdById && currentUid) e.createdById = currentUid;
+            memoryDB.events.unshift(e);
+          }
+        });
+      }
+
+      scheduleSave();
+      broadcastUpdate('sync');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
   // --- API エンドポイント: 友達追加・招待登録 (POST /api/friends) ---
   if (pathname === '/api/friends' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body);
-        const { hostId, guestId, guestName, guestAvatar, hostName, hostAvatar } = payload;
+    try {
+      const payload = await readJsonBody(req, res);
+      const { hostId, guestId, guestName, guestAvatar, hostName, hostAvatar } = payload;
 
-        // 自分自身の友達追加（増殖）を完全ブロック（IDのみで判定）
-        if (!hostId || !guestId || hostId === guestId) {
-          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ success: true, ignored: true }));
-          return;
-        }
-
-        // ゲスト側のユーザープロフィールの保存・最新化
-        if (guestId) {
-          if (!memoryDB.users[guestId]) {
-            memoryDB.users[guestId] = { id: guestId, name: guestName || '友達', avatar: guestAvatar || '😊' };
-          } else {
-            if (guestName) memoryDB.users[guestId].name = guestName;
-            if (guestAvatar) memoryDB.users[guestId].avatar = guestAvatar;
-          }
-        }
-
-        // ホスト側のユーザープロフィールの保存・最新化
-        if (hostId) {
-          if (!memoryDB.users[hostId]) {
-            memoryDB.users[hostId] = { id: hostId, name: hostName || '友達', avatar: hostAvatar || '🦊' };
-          } else {
-            if (hostName) memoryDB.users[hostId].name = hostName;
-            if (hostAvatar) memoryDB.users[hostId].avatar = hostAvatar;
-          }
-        }
-
-        // ホスト側の友達リストにゲストを追加
-        if (!memoryDB.userFriends[hostId]) memoryDB.userFriends[hostId] = [];
-        const hIdx = memoryDB.userFriends[hostId].findIndex(f => f.id === guestId);
-        const guestFriendObj = {
-          id: guestId,
-          name: guestName || (memoryDB.users[guestId] ? memoryDB.users[guestId].name : '友達'),
-          avatar: guestAvatar || (memoryDB.users[guestId] ? memoryDB.users[guestId].avatar : '😊'),
-          note: '招待リンクで参加'
-        };
-        if (hIdx >= 0) {
-          memoryDB.userFriends[hostId][hIdx] = { ...memoryDB.userFriends[hostId][hIdx], ...guestFriendObj };
-        } else {
-          memoryDB.userFriends[hostId].push(guestFriendObj);
-        }
-
-        // ゲスト側の友達リストにホストを追加
-        if (!memoryDB.userFriends[guestId]) memoryDB.userFriends[guestId] = [];
-        const gIdx = memoryDB.userFriends[guestId].findIndex(f => f.id === hostId);
-        const hostFriendObj = {
-          id: hostId,
-          name: hostName || (memoryDB.users[hostId] ? memoryDB.users[hostId].name : '友達'),
-          avatar: hostAvatar || (memoryDB.users[hostId] ? memoryDB.users[hostId].avatar : '🦊'),
-          note: '招待リンクから追加'
-        };
-        if (gIdx >= 0) {
-          memoryDB.userFriends[guestId][gIdx] = { ...memoryDB.userFriends[guestId][gIdx], ...hostFriendObj };
-        } else {
-          memoryDB.userFriends[guestId].push(hostFriendObj);
-        }
-
-        scheduleSave();
-        broadcastUpdate('friend_added');
-
+      // 自分自身の友達追加をブロック
+      if (!hostId || !guestId || hostId === guestId) {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
+        res.end(JSON.stringify({ success: true, ignored: true }));
+        return;
+      }
+
+      // ゲスト側のユーザープロフィール最新化
+      if (guestId) {
+        if (!memoryDB.users[guestId]) {
+          memoryDB.users[guestId] = { id: guestId, name: guestName || '友達', avatar: guestAvatar || '😊' };
+        } else {
+          if (guestName) memoryDB.users[guestId].name = guestName;
+          if (guestAvatar) memoryDB.users[guestId].avatar = guestAvatar;
+        }
+      }
+
+      // ホスト側のユーザープロフィール最新化
+      if (hostId) {
+        if (!memoryDB.users[hostId]) {
+          memoryDB.users[hostId] = { id: hostId, name: hostName || '友達', avatar: hostAvatar || '🦊' };
+        } else {
+          if (hostName) memoryDB.users[hostId].name = hostName;
+          if (hostAvatar) memoryDB.users[hostId].avatar = hostAvatar;
+        }
+      }
+
+      // ホスト側の友達リストにゲストを追加
+      if (!memoryDB.userFriends[hostId]) memoryDB.userFriends[hostId] = [];
+      const hIdx = memoryDB.userFriends[hostId].findIndex(f => f.id === guestId);
+      const guestFriendObj = {
+        id: guestId,
+        name: guestName || (memoryDB.users[guestId] ? memoryDB.users[guestId].name : '友達'),
+        avatar: guestAvatar || (memoryDB.users[guestId] ? memoryDB.users[guestId].avatar : '😊'),
+        note: '招待リンクで参加'
+      };
+      if (hIdx >= 0) {
+        memoryDB.userFriends[hostId][hIdx] = { ...memoryDB.userFriends[hostId][hIdx], ...guestFriendObj };
+      } else {
+        memoryDB.userFriends[hostId].push(guestFriendObj);
+      }
+
+      // ゲスト側の友達リストにホストを追加
+      if (!memoryDB.userFriends[guestId]) memoryDB.userFriends[guestId] = [];
+      const gIdx = memoryDB.userFriends[guestId].findIndex(f => f.id === hostId);
+      const hostFriendObj = {
+        id: hostId,
+        name: hostName || (memoryDB.users[hostId] ? memoryDB.users[hostId].name : '友達'),
+        avatar: hostAvatar || (memoryDB.users[hostId] ? memoryDB.users[hostId].avatar : '🦊'),
+        note: '招待リンクから追加'
+      };
+      if (gIdx >= 0) {
+        memoryDB.userFriends[guestId][gIdx] = { ...memoryDB.userFriends[guestId][gIdx], ...hostFriendObj };
+      } else {
+        memoryDB.userFriends[guestId].push(hostFriendObj);
+      }
+
+      scheduleSave();
+      broadcastUpdate('friend_added');
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
   // --- API エンドポイント: 友達削除 (POST /api/friends/delete) ---
   if (pathname === '/api/friends/delete' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const { userId: uid, friendId } = JSON.parse(body);
-        if (uid && memoryDB.userFriends[uid]) {
-          memoryDB.userFriends[uid] = memoryDB.userFriends[uid].filter(f => f.id !== friendId);
-          scheduleSave();
-          broadcastUpdate('friend_deleted', uid);
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
+    try {
+      const { userId: uid, friendId } = await readJsonBody(req, res);
+      if (uid && memoryDB.userFriends[uid]) {
+        memoryDB.userFriends[uid] = memoryDB.userFriends[uid].filter(f => f.id !== friendId);
+        scheduleSave();
+        broadcastUpdate('friend_deleted', uid);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
   // --- API エンドポイント: グループ削除 (POST /api/groups/delete) ---
   if (pathname === '/api/groups/delete' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const { groupId } = JSON.parse(body);
+    try {
+      const { groupId, userId: uid } = await readJsonBody(req, res);
+      const targetGroup = memoryDB.groups.find(g => g.id === groupId);
+      if (targetGroup) {
+        // 作成者本人のみ削除可能
+        if (targetGroup.createdById && uid && targetGroup.createdById !== uid) {
+          res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'グループを作成した本人のみ削除できます' }));
+          return;
+        }
         memoryDB.groups = memoryDB.groups.filter(g => g.id !== groupId);
         scheduleSave();
         broadcastUpdate('group_deleted');
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true, groups: memoryDB.groups }));
-      } catch (e) {
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, groups: memoryDB.groups }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
   // --- API エンドポイント: グループ脱退・更新 (POST /api/groups/update) ---
   if (pathname === '/api/groups/update' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const updatedGroup = JSON.parse(body);
-        const idx = memoryDB.groups.findIndex(g => g.id === updatedGroup.id);
-        if (idx >= 0) {
-          memoryDB.groups[idx] = updatedGroup;
-        } else {
-          memoryDB.groups.push(updatedGroup);
-        }
-        scheduleSave();
-        broadcastUpdate('group_updated');
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true, groups: memoryDB.groups }));
-      } catch (e) {
+    try {
+      const updatedGroup = await readJsonBody(req, res);
+      const idx = memoryDB.groups.findIndex(g => g.id === updatedGroup.id);
+      if (idx >= 0) {
+        memoryDB.groups[idx] = updatedGroup;
+      } else {
+        memoryDB.groups.push(updatedGroup);
+      }
+      scheduleSave();
+      broadcastUpdate('group_updated');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, groups: memoryDB.groups }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
-
-
   // --- API エンドポイント: 予定削除 (POST /api/events/delete) ---
   if (pathname === '/api/events/delete' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const { eventId, userId } = JSON.parse(body);
-        if (!eventId) {
-          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ error: 'イベントIDが指定されていません' }));
+    try {
+      const { eventId, userId: uid } = await readJsonBody(req, res);
+      if (!eventId) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'イベントIDが指定されていません' }));
+        return;
+      }
+
+      const targetEvent = memoryDB.events.find(e => e.id === eventId);
+      if (targetEvent) {
+        // 作成者本人（または初期互換user_me）のみ削除可能
+        if (targetEvent.createdById && targetEvent.createdById !== 'user_me' && uid && targetEvent.createdById !== uid) {
+          res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: '予定を作成した本人のみ削除できます' }));
           return;
         }
+      }
 
-        const targetEvent = memoryDB.events.find(e => e.id === eventId);
-        if (targetEvent) {
-          // 作成者本人（または初期互換user_me）のみ削除可能
-          if (targetEvent.createdById && targetEvent.createdById !== 'user_me' && userId && targetEvent.createdById !== userId) {
-            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify({ error: '予定を作成した本人のみ削除できます' }));
-            return;
-          }
+      memoryDB.events = memoryDB.events.filter(e => e.id !== eventId);
+      if (!Array.isArray(memoryDB.deletedEventIds)) {
+        memoryDB.deletedEventIds = [];
+      }
+      if (!memoryDB.deletedEventIds.includes(eventId)) {
+        memoryDB.deletedEventIds.push(eventId);
+        if (memoryDB.deletedEventIds.length > 500) {
+          memoryDB.deletedEventIds.shift();
         }
+      }
+      scheduleSave();
+      broadcastUpdate('event_deleted');
 
-        memoryDB.events = memoryDB.events.filter(e => e.id !== eventId);
-        if (!Array.isArray(memoryDB.deletedEventIds)) {
-          memoryDB.deletedEventIds = [];
-        }
-        if (!memoryDB.deletedEventIds.includes(eventId)) {
-          memoryDB.deletedEventIds.push(eventId);
-          if (memoryDB.deletedEventIds.length > 500) {
-            memoryDB.deletedEventIds.shift();
-          }
-        }
-        scheduleSave();
-        broadcastUpdate('event_deleted');
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true, events: memoryDB.events }));
-      } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, events: memoryDB.events }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
 
   // --- API エンドポイント: 出欠回答 (POST /api/rsvp) ---
   if (pathname === '/api/rsvp' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const { eventId, userId: uid, userName, userAvatar, status, comment } = JSON.parse(body);
-        const ev = memoryDB.events.find(e => e.id === eventId);
-        if (ev) {
-          let att = ev.attendees.find(a => a.friendId === uid);
-          if (att) {
-            att.status = status;
-            if (comment !== undefined) att.comment = comment;
-            att.updatedAt = new Date().toISOString();
-          } else {
-            ev.attendees.push({
-              friendId: uid || ('u_' + Date.now()),
-              name: userName || 'ゲスト',
-              avatar: userAvatar || '👤',
-              status: status,
-              comment: comment || '',
-              updatedAt: new Date().toISOString()
-            });
-          }
-          scheduleSave();
-          broadcastUpdate('rsvp_updated');
+    try {
+      const { eventId, userId: uid, userName, userAvatar, status, comment } = await readJsonBody(req, res);
+      const ev = memoryDB.events.find(e => e.id === eventId);
+      if (ev) {
+        let att = ev.attendees.find(a => a.friendId === uid);
+        if (att) {
+          att.status = status;
+          if (comment !== undefined) att.comment = comment;
+          att.updatedAt = new Date().toISOString();
+        } else {
+          ev.attendees.push({
+            friendId: uid || ('u_' + Date.now()),
+            name: userName || 'ゲスト',
+            avatar: userAvatar || '👤',
+            status: status,
+            comment: comment || '',
+            updatedAt: new Date().toISOString()
+          });
         }
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ success: true, event: ev }));
-      } catch (e) {
+        scheduleSave();
+        broadcastUpdate('rsvp_updated');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, event: ev }));
+    } catch (e) {
+      if (!res.writableEnded) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: e.message }));
       }
-    });
+    }
     return;
   }
-  // --- API エンドポイント: ユーザー情報自動照会 (GET /api/users/lookup?id=...) ---
+
+  // --- API エンドポイント: ユーザー情報照会 (GET /api/users/lookup?id=...) ---
   if (pathname === '/api/users/lookup' && req.method === 'GET') {
     const targetId = parsedUrl.searchParams.get('id');
     if (targetId && memoryDB.users[targetId]) {
@@ -605,7 +704,6 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ success: true, user: memoryDB.users[targetId] }));
       return;
     }
-    // 友達リストからも逆引き
     for (const ownerId in memoryDB.userFriends) {
       const found = (memoryDB.userFriends[ownerId] || []).find(f => f.id === targetId);
       if (found) {
@@ -619,8 +717,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-
-  // --- 静的ファイルの配信 ---
+  // --- 静的ファイルの安全な配信 ---
   let filePath = path.join(__dirname, pathname);
   if (filePath === __dirname || filePath === __dirname + '\\' || filePath === __dirname + '/') {
     filePath = path.join(__dirname, 'index.html');
@@ -655,7 +752,7 @@ const server = http.createServer((req, res) => {
 
 if (require.main === module) {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`GatherSync Real-Time In-Memory Server running at http://localhost:${PORT}/`);
+    console.log(`GatherSync Server running at http://localhost:${PORT}/`);
   });
 }
 
