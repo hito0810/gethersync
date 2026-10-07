@@ -2738,7 +2738,6 @@
             this.eventSource = new EventSource(streamUrl);
 
             this.eventSource.onopen = () => {
-              this.updateSyncBadge(true);
             };
 
             this.eventSource.onmessage = (e) => {
@@ -2753,7 +2752,6 @@
             };
 
             this.eventSource.onerror = () => {
-              this.updateSyncBadge(false);
               // 5秒後に再接続試行
               setTimeout(() => {
                 if (this.eventSource && this.eventSource.readyState === EventSource.CLOSED) {
@@ -2761,29 +2759,7 @@
                 }
               }, 5000);
             };
-          } catch (e) {
-            this.updateSyncBadge(false);
-          }
-        }
-
-        updateSyncBadge(isConnected) {
-          const badge = document.getElementById('sync-status-badge');
-          const text = document.getElementById('sync-status-text');
-          if (!badge || !text) return;
-
-          if (isConnected) {
-            badge.style.background = 'rgba(16, 185, 129, 0.12)';
-            badge.style.color = 'var(--success)';
-            badge.style.borderColor = 'rgba(16, 185, 129, 0.25)';
-            badge.title = '公開サーバーとリアルタイム接続中（全端末即座に同期されます）';
-            text.textContent = '同期中';
-          } else {
-            badge.style.background = 'rgba(59, 130, 246, 0.12)';
-            badge.style.color = 'var(--accent)';
-            badge.style.borderColor = 'rgba(59, 130, 246, 0.25)';
-            badge.title = '定期ポーリング同期モードで稼働中';
-            text.textContent = '同期中';
-          }
+          } catch (e) { }
         }
 
         async pullFromServer(silent = false) {
@@ -2813,9 +2789,6 @@
 
           if (updated) {
             this.renderAll();
-          }
-          if (!silent) {
-            this.updateSyncBadge(true);
           }
         }
 
@@ -3606,21 +3579,7 @@
         `).join('');
         }
 
-        renderNotifications() {
-          const container = document.getElementById('notification-list-container');
-          if (!container) return;
-          const notifs = StorageManager.getNotifications();
-          if (notifs.length === 0) {
-            container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-secondary); font-size:13px;">通知はありません</div>`;
-            return;
-          }
-          container.innerHTML = notifs.map(n => `
-          <div style="padding:14px; background:var(--bg-secondary); border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:10px;">
-            <div style="font-weight:700; font-size:14px; margin-bottom:4px;">${n.title}</div>
-            <div style="font-size:13px; color:var(--text-secondary);">${n.message}</div>
-          </div>
-        `).join('');
-        }
+
 
         // --- 出欠回答 ---
         submitRSVP(id, status) {
