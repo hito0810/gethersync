@@ -560,7 +560,19 @@ export class StorageManager {
 
   // --- Notifications ---
   static getNotifications() {
-    return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
+    const list = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
+    const now = Date.now();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    const filtered = list.filter(n => {
+      if (!n || !n.id) return false;
+      const t = n.timestamp ? new Date(n.timestamp).getTime() : 0;
+      if (t && (now - t > SEVEN_DAYS)) return false;
+      return true;
+    });
+    if (filtered.length !== list.length) {
+      SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(filtered));
+    }
+    return filtered;
   }
   static addNotification(notif) {
     const notifs = this.getNotifications();
@@ -570,8 +582,10 @@ export class StorageManager {
       message: notif.message,
       eventId: notif.eventId || null,
       time: 'たった今',
+      timestamp: new Date().toISOString(),
       isRead: false
     });
+    if (notifs.length > 50) notifs.pop();
     SafeStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
   }
 }

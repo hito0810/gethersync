@@ -2392,21 +2392,15 @@
           this.saveEvents(merged);
         },
 
-        // --- 🔔 通知マネージャー（一括表示＆閲覧から1時間後に自動削除） ---
+        // --- 🔔 通知マネージャー（一括表示＆1週間後に自動削除） ---
         getNotifications() {
           const list = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
           const now = Date.now();
-          const ONE_HOUR = 60 * 60 * 1000;
           const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
           const filtered = list.filter(n => {
             if (!n || !n.id) return false;
-            // 閲覧済みの場合: 閲覧時刻（readAt）から1時間経過で自動削除
-            if (n.read && n.readAt) {
-              const readTime = new Date(n.readAt).getTime();
-              if (readTime && (now - readTime >= ONE_HOUR)) return false;
-            }
-            // 未読のままでも7日経過した古い通知は自動削除
+            // 届いてから7日間（1週間）経過した古い通知は自動削除
             const t = n.timestamp ? new Date(n.timestamp).getTime() : 0;
             if (t && (now - t > SEVEN_DAYS)) return false;
             return true;
@@ -2936,7 +2930,7 @@
 
           container.innerHTML = `
             <div style="font-size: 11px; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
-              <span>⏳</span> <span>確認したお知らせは、確認後1時間で自動的に整理（削除）されます</span>
+              <span>⏳</span> <span>お知らせは受信から1週間（7日間）後に自動的に整理（削除）されます</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
               ${notifs.map(n => `
@@ -2975,16 +2969,6 @@
           if (navAvatar) {
             navAvatar.innerHTML = UI.renderAvatarHtml(user.avatar || '🦊', 24);
           }
-        }
-
-        showNotificationInfo() {
-          const notifs = StorageManager.getNotifications();
-          if (notifs.length === 0) {
-            this.showToast('🔔 新しい通知はありません');
-            return;
-          }
-          const latest = notifs[0];
-          this.showToast(`🔔 ${latest.title}: ${latest.message}`);
         }
 
         // --- URLパラメータ（友達招待）の解析 ＆ サーバー即時追加 ---
