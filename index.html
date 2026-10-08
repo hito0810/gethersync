@@ -1010,10 +1010,10 @@
       border-radius: var(--radius-lg);
       width: 100%;
       max-width: 480px;
-      max-height: 90vh;
+      max-height: min(68vh, calc(100dvh - 150px));
       overflow-y: auto;
       box-shadow: var(--shadow-hover);
-      padding: 22px;
+      padding: 20px;
     }
 
     .modal-header {
@@ -1490,9 +1490,10 @@
 
   <div id="modal-add-group" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
-    <div id="ad-slot-add-group-modal-top" class="ad-bg-slot" style="display: flex; justify-content: center;">
-      <div class="ad-card-placeholder">
-        <div class="ad-content-area">
+    <div id="ad-slot-add-group-modal-top" class="ad-bg-slot" style="max-width: 480px; display: flex; justify-content: center;">
+      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area" style="min-height: 50px;">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/f0a80af96427e3f828e01bc7cac7fc5e"></script>
           <!-- admax -->
@@ -1551,9 +1552,10 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
-    <div id="ad-slot-add-group-modal-bottom" class="ad-bg-slot" style="display: flex; justify-content: center;">
-      <div class="ad-card-placeholder">
-        <div class="ad-content-area">
+    <div id="ad-slot-add-group-modal-bottom" class="ad-bg-slot" style="max-width: 480px; display: flex; justify-content: center;">
+      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area" style="min-height: 50px;">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/df2fadf7a24dc7ad71bba1c9a266a970"></script>
           <!-- admax -->
@@ -1747,8 +1749,9 @@
   <div id="modal-friend-invite" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
     <div id="ad-slot-friend-invite-modal-top" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
-      <div class="ad-card-placeholder">
-        <div class="ad-content-area">
+      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area" style="min-height: 50px;">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/149d17f8bb7965c3fb28c81fc32e5607"></script>
           <!-- admax -->
@@ -1787,8 +1790,9 @@
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
     <div id="ad-slot-friend-invite-modal-bottom" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
-      <div class="ad-card-placeholder">
-        <div class="ad-content-area">
+      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area" style="min-height: 50px;">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/2ba109fb8c010d2b227b45177180d42c"></script>
           <!-- admax -->
@@ -1867,9 +1871,10 @@
   <!-- 9. プロフィール設定モーダル -->
   <div id="modal-profile" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
-    <div id="ad-slot-profile-modal-top" class="ad-bg-slot" style="display: flex; justify-content: center;">
-      <div class="ad-card-placeholder">
-        <div class="ad-content-area">
+    <div id="ad-slot-profile-modal-top" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
+      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area" style="min-height: 50px;">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/2e2e6a7f6d96dfe68331f5a96ba5c1be"></script>
           <!-- admax -->
@@ -1966,9 +1971,10 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
-    <div id="ad-slot-profile-modal-bottom" class="ad-bg-slot" style="display: flex; justify-content: center;">
-      <div class="ad-card-placeholder">
-        <div class="ad-content-area">
+    <div id="ad-slot-profile-modal-bottom" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
+      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area" style="min-height: 50px;">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/a295da759baaceac459d420979a3af46"></script>
           <!-- admax -->
