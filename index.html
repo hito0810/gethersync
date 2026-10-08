@@ -835,23 +835,23 @@
       box-sizing: border-box;
     }
 
-    /* 広告バナー枠（枠内にぴったり収まるスタイル） */
+    /* 広告バナー枠（広告の大きさにぴったりフィット） */
     .ad-card-placeholder {
-      width: 100%;
-      min-height: 58px;
-      background: #ffffff;
-      border: 1.5px dashed #94a3b8;
-      border-radius: var(--radius-md);
-      display: flex;
+      display: inline-flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      min-height: unset;
+      padding: 0;
+      margin: 0 auto;
+      background: transparent;
+      border: none;
+      box-shadow: none;
       position: relative;
-      padding: 10px 14px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      transition: var(--transition-fast);
-      box-sizing: border-box;
       overflow: hidden;
+      box-sizing: border-box;
     }
 
     /* 追従・オーバーレイ広告を強制ブロック（画面の上に移動・追従して邪魔になるのを防止） */
@@ -890,9 +890,23 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      width: fit-content;
+      max-width: 100%;
+      min-height: unset;
+      margin: 0 auto;
       text-align: center;
-      width: 100%;
+    }
+
+    div[id^="admax-banner"] {
+      max-width: 100% !important;
+      margin: 0 auto !important;
+      display: flex !important;
+      justify-content: center !important;
+    }
+
+    div[id^="admax-banner"] iframe {
+      max-width: 100% !important;
+      border-radius: var(--radius-md) !important;
     }
 
     .modal-ad-slot {
@@ -1191,10 +1205,9 @@
 
 
     <!-- 📢 広告枠: 画面最上部トップバナー -->
-    <div id="ad-slot-header-top" class="ad-slot-container" style="margin-top: 0; margin-bottom: 14px;">
-      <div class="ad-card-placeholder" style="min-height: 260px; padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 250px; width: 100%; display: flex; align-items: center; justify-content: center;">
+    <div id="ad-slot-header-top" class="ad-slot-container" style="margin-top: 0; margin-bottom: 12px; display: flex; justify-content: center;">
+      <div class="ad-card-placeholder">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/8276c8239e53120537f6bbf19148d84d"></script>
           <!-- admax -->
@@ -1283,10 +1296,9 @@
       </section>
 
       <!-- 📢 広告枠: 予定ホーム画面下部 (画像1の丸印の場所) -->
-      <div id="ad-slot-home-bottom" class="ad-slot-container" style="margin-top: 20px;">
-        <div class="ad-card-placeholder" style="min-height: 260px; padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
-          <span class="ad-badge">スポンサー</span>
-          <div class="ad-content-area" style="min-height: 250px; width: 100%; display: flex; align-items: center; justify-content: center;">
+      <div id="ad-slot-home-bottom" class="ad-slot-container" style="margin-top: 20px; display: flex; justify-content: center;">
+        <div class="ad-card-placeholder">
+          <div class="ad-content-area">
             <!-- admax -->
             <script src="https://adm.shinobi.jp/s/aefb8aa201a17a82bc8d235d776184ed"></script>
             <!-- admax -->
