@@ -323,7 +323,8 @@ const MIME_TYPES = {
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
-  '.ics': 'text/calendar; charset=utf-8'
+  '.ics': 'text/calendar; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8'
 };
 
 const server = http.createServer(async (req, res) => {
