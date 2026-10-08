@@ -29,6 +29,17 @@
     })();
   </script>
 
+  <!-- 🛡️ 忍者AdMaxの画面追従（オーバーレイ/フロート）を無効化し、指定の点線枠内のみに収める -->
+  <script>
+    try {
+      Object.defineProperty(window, 'admaxoverlay', {
+        get: function () { return undefined; },
+        set: function () { },
+        configurable: false
+      });
+    } catch (e) { }
+  </script>
+
   <!-- Firebase SDK (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -824,6 +835,7 @@
       box-sizing: border-box;
     }
 
+    /* 広告バナー枠（枠内にぴったり収まるスタイル） */
     .ad-card-placeholder {
       width: 100%;
       min-height: 58px;
@@ -840,6 +852,17 @@
       transition: var(--transition-fast);
       box-sizing: border-box;
       overflow: hidden;
+    }
+
+    /* 追従・オーバーレイ広告を強制ブロック（画面の上に移動・追従して邪魔になるのを防止） */
+    ins[style*="fixed"],
+    div[id*="admax"][style*="fixed"],
+    iframe[id*="admax_overlay"] {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
     }
 
     .ad-card-placeholder:hover {
@@ -1169,10 +1192,13 @@
 
     <!-- 📢 広告枠: 画面最上部トップバナー -->
     <div id="ad-slot-header-top" class="ad-slot-container" style="margin-top: 0; margin-bottom: 14px;">
-      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
-      <div class="ad-card-placeholder">
+      <div class="ad-card-placeholder" style="min-height: 260px; padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
         <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area">📢 広告スペース</div>
+        <div class="ad-content-area" style="min-height: 250px; width: 100%; display: flex; align-items: center; justify-content: center;">
+          <!-- admax -->
+          <script src="https://adm.shinobi.jp/s/aefb8aa201a17a82bc8d235d776184ed"></script>
+          <!-- admax -->
+        </div>
       </div>
     </div>
 
@@ -1698,13 +1724,10 @@
   <div id="modal-friend-invite" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側・画像1上の丸印の場所） -->
     <div id="ad-slot-friend-invite-modal-top" class="ad-bg-slot" style="max-width: 360px;">
+      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
       <div class="ad-bg-card">
         <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area">
-          <!-- admax -->
-          <script src="https://adm.shinobi.jp/s/aefb8aa201a17a82bc8d235d776184ed"></script>
-          <!-- admax -->
-        </div>
+        <div class="ad-content-area">📢 広告スペース</div>
       </div>
     </div>
 
