@@ -7,7 +7,15 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["calendar", "rsvp", "sync", "realtime"],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "keywords": [
+    "calendar",
+    "rsvp",
+    "sync",
+    "realtime"
+  ],
   "author": "",
   "license": "MIT"
 }

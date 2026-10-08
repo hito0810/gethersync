@@ -14,3 +14,5 @@ cloudflared.exe
 # Local databases & logs
 *.log
 database.json
+.env
+.env.local
