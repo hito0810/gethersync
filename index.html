@@ -814,6 +814,68 @@
       cursor: pointer;
     }
 
+    /* === 📢 広告枠コンポーネント（丸印の指定箇所に対応） === */
+    .ad-slot-container {
+      width: 100%;
+      margin: 18px 0 10px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    .ad-card-placeholder {
+      width: 100%;
+      min-height: 58px;
+      background: #ffffff;
+      border: 1.5px dashed #94a3b8;
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 10px 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      transition: var(--transition-fast);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .ad-card-placeholder:hover {
+      border-color: var(--primary);
+      background: #fcfdfd;
+    }
+
+    .ad-badge {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      font-size: 9px;
+      color: #94a3b8;
+      background: #f1f5f9;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .ad-content-area {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .modal-ad-slot {
+      margin: 10px 0;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -1037,6 +1099,15 @@
 
 
 
+    <!-- 📢 広告枠: 画面最上部トップバナー -->
+    <div id="ad-slot-header-top" class="ad-slot-container" style="margin-top: 0; margin-bottom: 14px;">
+      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+      <div class="ad-card-placeholder">
+        <span class="ad-badge">スポンサー</span>
+        <div class="ad-content-area">📢 広告スペース</div>
+      </div>
+    </div>
+
     <!-- 1. Top Hero Header (画像完全準拠) -->
     <header class="top-hero-header">
       <div>
@@ -1116,6 +1187,15 @@
           <!-- 進行中の予定一覧が動的レンダリングされます -->
         </div>
       </section>
+
+      <!-- 📢 広告枠: 予定ホーム画面下部 (画像1の丸印の場所) -->
+      <div id="ad-slot-home-bottom" class="ad-slot-container" style="margin-top: 20px;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
     </main>
 
     <!-- VIEW 2: Groups -->
@@ -1127,6 +1207,15 @@
         </div>
       </div>
       <div id="group-list-container" style="margin-top: 14px;"></div>
+
+      <!-- 📢 広告枠: グループ画面下部 (画像2の丸印の場所) -->
+      <div id="ad-slot-groups-bottom" class="ad-slot-container" style="margin-top: 20px;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
     </section>
 
     <!-- VIEW 3: Friends -->
@@ -1138,6 +1227,15 @@
         </div>
       </div>
       <div id="friend-list-container" style="margin-top: 14px;"></div>
+
+      <!-- 📢 広告枠: 友達画面下部 -->
+      <div id="ad-slot-friends-bottom" class="ad-slot-container" style="margin-top: 20px;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -1426,11 +1524,29 @@
 
   <div id="modal-event-detail" class="modal-overlay">
     <div class="modal-box">
+      <!-- 📢 広告枠: 予定詳細モーダル上部 (画像4上の丸印の場所) -->
+      <div id="ad-slot-event-modal-top" class="ad-slot-container modal-ad-slot" style="margin-top: 0; margin-bottom: 10px;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
+
       <div class="modal-header">
         <h3 class="modal-title">📋 予定の詳細 & 出欠一覧</h3>
         <button class="btn-icon" onclick="window.App.closeModal('modal-event-detail')">✕</button>
       </div>
       <div id="event-detail-content"></div>
+
+      <!-- 📢 広告枠: 予定詳細モーダル下部 (画像4下の丸印の場所) -->
+      <div id="ad-slot-event-modal-bottom" class="ad-slot-container modal-ad-slot" style="margin-top: 16px; margin-bottom: 0;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1573,6 +1689,15 @@
   <!-- 9. プロフィール設定モーダル -->
   <div id="modal-profile" class="modal-overlay">
     <div class="modal-box">
+      <!-- 📢 広告枠: プロフィール設定モーダル上部 (画像3上の丸印の場所) -->
+      <div id="ad-slot-profile-modal-top" class="ad-slot-container modal-ad-slot" style="margin-top: 0; margin-bottom: 10px;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
+
       <div class="modal-header">
         <h3 class="modal-title">👤 プロフィール設定</h3>
         <button class="btn-icon" onclick="window.App.closeModal('modal-profile')">✕</button>
@@ -1657,6 +1782,15 @@
           <button type="submit" class="btn btn-primary">プロフィールを保存</button>
         </div>
       </form>
+
+      <!-- 📢 広告枠: プロフィール設定モーダル下部 (画像3下の丸印の場所) -->
+      <div id="ad-slot-profile-modal-bottom" class="ad-slot-container modal-ad-slot" style="margin-top: 16px; margin-bottom: 0;">
+        <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+        <div class="ad-card-placeholder">
+          <span class="ad-badge">スポンサー</span>
+          <div class="ad-content-area">📢 広告スペース</div>
+        </div>
+      </div>
     </div>
   </div>
 
