@@ -935,34 +935,45 @@
       overflow-y: auto;
     }
 
-    /* モーダル外側・背景エリアの広告枠（白い枠を伸ばさない） */
+    /* モーダル外側・背景エリアの広告枠（広告バナーサイズにぴったりフィット） */
     .ad-bg-slot {
       width: 100%;
-      max-width: 480px;
       display: flex;
       justify-content: center;
       align-items: center;
       flex-shrink: 0;
       pointer-events: auto;
+      margin: 4px 0;
     }
 
     .ad-bg-card {
-      width: 100%;
-      min-height: 52px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: none;
-      border-radius: var(--radius-md);
-      display: flex;
+      display: inline-flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      min-height: unset;
+      padding: 0;
+      margin: 0 auto;
+      background: transparent;
+      border: none;
+      box-shadow: none;
       position: relative;
-      padding: 6px 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-      box-sizing: border-box;
       overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .ad-bg-card .ad-badge {
+      display: none !important;
+    }
+
+    .ad-bg-card .ad-content-area {
+      min-height: unset !important;
+      padding: 0 !important;
+      margin: 0 auto !important;
+      background: transparent !important;
+      box-shadow: none !important;
     }
 
     .modal-overlay.active {
@@ -1490,10 +1501,9 @@
 
   <div id="modal-add-group" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
-    <div id="ad-slot-add-group-modal-top" class="ad-bg-slot" style="max-width: 480px; display: flex; justify-content: center;">
-      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 50px;">
+    <div id="ad-slot-add-group-modal-top" class="ad-bg-slot">
+      <div class="ad-bg-card">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/f0a80af96427e3f828e01bc7cac7fc5e"></script>
           <!-- admax -->
@@ -1552,10 +1562,9 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
-    <div id="ad-slot-add-group-modal-bottom" class="ad-bg-slot" style="max-width: 480px; display: flex; justify-content: center;">
-      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 50px;">
+    <div id="ad-slot-add-group-modal-bottom" class="ad-bg-slot">
+      <div class="ad-bg-card">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/df2fadf7a24dc7ad71bba1c9a266a970"></script>
           <!-- admax -->
@@ -1567,11 +1576,9 @@
   <!-- グループ編集モーダル -->
   <div id="modal-edit-group" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
-    <div id="ad-slot-edit-group-modal-top" class="ad-bg-slot">
-      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+    <div id="ad-slot-edit-group-modal-top" class="ad-bg-slot" style="display: none;">
       <div class="ad-bg-card">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area">📢 広告スペース</div>
+        <div class="ad-content-area"></div>
       </div>
     </div>
 
@@ -1631,11 +1638,9 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
-    <div id="ad-slot-edit-group-modal-bottom" class="ad-bg-slot">
-      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+    <div id="ad-slot-edit-group-modal-bottom" class="ad-bg-slot" style="display: none;">
       <div class="ad-bg-card">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area">📢 広告スペース</div>
+        <div class="ad-content-area"></div>
       </div>
     </div>
   </div>
@@ -1680,11 +1685,9 @@
 
   <div id="modal-event-detail" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側・画像4上の丸印の場所） -->
-    <div id="ad-slot-event-modal-top" class="ad-bg-slot">
-      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+    <div id="ad-slot-event-modal-top" class="ad-bg-slot" style="display: none;">
       <div class="ad-bg-card">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area">📢 広告スペース</div>
+        <div class="ad-content-area"></div>
       </div>
     </div>
 
@@ -1698,11 +1701,9 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側・画像4下の丸印の場所） -->
-    <div id="ad-slot-event-modal-bottom" class="ad-bg-slot">
-      <!-- 💡 広告コード（タグ）を貼り付ける場所 -->
+    <div id="ad-slot-event-modal-bottom" class="ad-bg-slot" style="display: none;">
       <div class="ad-bg-card">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area">📢 広告スペース</div>
+        <div class="ad-content-area"></div>
       </div>
     </div>
   </div>
@@ -1748,10 +1749,9 @@
   <!-- 7. 友達招待URL・QR共有モーダル -->
   <div id="modal-friend-invite" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
-    <div id="ad-slot-friend-invite-modal-top" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
-      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 50px;">
+    <div id="ad-slot-friend-invite-modal-top" class="ad-bg-slot">
+      <div class="ad-bg-card">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/149d17f8bb7965c3fb28c81fc32e5607"></script>
           <!-- admax -->
@@ -1789,10 +1789,9 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
-    <div id="ad-slot-friend-invite-modal-bottom" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
-      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 50px;">
+    <div id="ad-slot-friend-invite-modal-bottom" class="ad-bg-slot">
+      <div class="ad-bg-card">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/2ba109fb8c010d2b227b45177180d42c"></script>
           <!-- admax -->
@@ -1871,10 +1870,9 @@
   <!-- 9. プロフィール設定モーダル -->
   <div id="modal-profile" class="modal-overlay">
     <!-- 📢 広告枠: 背景上部（モーダル外側） -->
-    <div id="ad-slot-profile-modal-top" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
-      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 50px;">
+    <div id="ad-slot-profile-modal-top" class="ad-bg-slot">
+      <div class="ad-bg-card">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/2e2e6a7f6d96dfe68331f5a96ba5c1be"></script>
           <!-- admax -->
@@ -1971,10 +1969,9 @@
     </div>
 
     <!-- 📢 広告枠: 背景下部（モーダル外側） -->
-    <div id="ad-slot-profile-modal-bottom" class="ad-bg-slot" style="max-width: 360px; display: flex; justify-content: center;">
-      <div class="ad-bg-card" style="min-height: 52px; padding: 4px 8px; width: 100%;">
-        <span class="ad-badge">スポンサー</span>
-        <div class="ad-content-area" style="min-height: 50px;">
+    <div id="ad-slot-profile-modal-bottom" class="ad-bg-slot">
+      <div class="ad-bg-card">
+        <div class="ad-content-area">
           <!-- admax -->
           <script src="https://adm.shinobi.jp/s/a295da759baaceac459d420979a3af46"></script>
           <!-- admax -->
