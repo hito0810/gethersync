@@ -108,6 +108,7 @@ let memoryDB = {
   users: {},
   userFriends: {},
   groups: [],
+  deletedGroupIds: [],
   events: [],
   deletedEventIds: [],
   notifications: []
@@ -122,6 +123,7 @@ function initDB() {
         users: data.users || {},
         userFriends: data.userFriends || {},
         groups: data.groups || [],
+        deletedGroupIds: data.deletedGroupIds || [],
         events: data.events || [],
         deletedEventIds: data.deletedEventIds || [],
         notifications: data.notifications || []
@@ -419,17 +421,24 @@ const server = http.createServer(async (req, res) => {
           return myFriendIds.includes(e.createdById);
         });
 
-        // 4. 削除済み予定リスト
+        // 4. 削除済み予定リスト ＆ 削除済みグループリスト
         const { data: delRows } = await supabase.from('deleted_event_ids').select('id');
         const deletedEventIds = (delRows || []).map(r => r.id);
+
+        let deletedGroupIds = [];
+        try {
+          const { data: delGrpRows } = await supabase.from('deleted_group_ids').select('id');
+          deletedGroupIds = (delGrpRows || []).map(r => r.id);
+        } catch (e) { }
 
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({
           epoch: Date.now(),
           friends: myFriends,
-          groups: enrichedGroups,
+          groups: enrichedGroups.filter(g => !deletedGroupIds.includes(g.id)),
           events: myEvents,
-          deletedEventIds: deletedEventIds
+          deletedEventIds: deletedEventIds,
+          deletedGroupIds: deletedGroupIds
         }));
         return;
       }
@@ -443,8 +452,10 @@ const server = http.createServer(async (req, res) => {
       });
       const myFriendIds = myFriends.map(f => f.id);
 
+      const deletedGroupIds = memoryDB.deletedGroupIds || [];
       const myGroups = (memoryDB.groups || []).filter(g =>
-        g.createdById === userId || (Array.isArray(g.memberIds) && g.memberIds.includes(userId))
+        !deletedGroupIds.includes(g.id) &&
+        (g.createdById === userId || (Array.isArray(g.memberIds) && g.memberIds.includes(userId)))
       );
 
       const enrichedGroups = myGroups.map(g => {
@@ -485,7 +496,8 @@ const server = http.createServer(async (req, res) => {
         friends: myFriends,
         groups: enrichedGroups,
         events: myEvents,
-        deletedEventIds: memoryDB.deletedEventIds || []
+        deletedEventIds: memoryDB.deletedEventIds || [],
+        deletedGroupIds: memoryDB.deletedGroupIds || []
       }));
     } catch (err) {
       console.error('GET /api/sync error:', err);
@@ -555,7 +567,12 @@ const server = http.createServer(async (req, res) => {
           }
         }
         if (Array.isArray(incoming.groups)) {
-          const gRows = incoming.groups.filter(g => g && g.id).map(groupToDb);
+          let blockedGroupIds = [];
+          try {
+            const { data: delG } = await supabase.from('deleted_group_ids').select('id');
+            blockedGroupIds = (delG || []).map(r => r.id);
+          } catch (e) { }
+          const gRows = incoming.groups.filter(g => g && g.id && !blockedGroupIds.includes(g.id)).map(groupToDb);
           if (gRows.length > 0) await supabase.from('groups').upsert(gRows);
         }
         if (Array.isArray(incoming.events)) {
@@ -576,8 +593,9 @@ const server = http.createServer(async (req, res) => {
           }
         }
         if (Array.isArray(incoming.groups)) {
+          const blockedGrpIds = memoryDB.deletedGroupIds || [];
           incoming.groups.forEach(g => {
-            if (!g || !g.id) return;
+            if (!g || !g.id || blockedGrpIds.includes(g.id)) return;
             const idx = memoryDB.groups.findIndex(dg => dg.id === g.id);
             if (idx >= 0) {
               const existing = memoryDB.groups[idx];
@@ -721,6 +739,11 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/groups/delete' && req.method === 'POST') {
     try {
       const { groupId, userId: uid } = await readJsonBody(req, res);
+      if (!groupId) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'groupId is required' }));
+        return;
+      }
       if (supabase) {
         const { data: targetGroup } = await supabase.from('groups').select('created_by_id').eq('id', groupId).single();
         if (targetGroup && targetGroup.created_by_id && uid && targetGroup.created_by_id !== uid) {
@@ -729,6 +752,9 @@ const server = http.createServer(async (req, res) => {
           return;
         }
         await supabase.from('groups').delete().eq('id', groupId);
+        try {
+          await supabase.from('deleted_group_ids').upsert({ id: groupId });
+        } catch (e) { }
       } else {
         const targetGroup = memoryDB.groups.find(g => g.id === groupId);
         if (targetGroup && targetGroup.createdById && uid && targetGroup.createdById !== uid) {
@@ -737,6 +763,11 @@ const server = http.createServer(async (req, res) => {
           return;
         }
         memoryDB.groups = memoryDB.groups.filter(g => g.id !== groupId);
+        if (!Array.isArray(memoryDB.deletedGroupIds)) memoryDB.deletedGroupIds = [];
+        if (!memoryDB.deletedGroupIds.includes(groupId)) {
+          memoryDB.deletedGroupIds.push(groupId);
+          if (memoryDB.deletedGroupIds.length > 500) memoryDB.deletedGroupIds.shift();
+        }
         scheduleSave();
       }
       broadcastUpdate('group_deleted');
@@ -755,15 +786,23 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/groups/update' && req.method === 'POST') {
     try {
       const updatedGroup = await readJsonBody(req, res);
-      if (supabase) {
-        await supabase.from('groups').upsert(groupToDb(updatedGroup));
-      } else {
-        const idx = memoryDB.groups.findIndex(g => g.id === updatedGroup.id);
-        if (idx >= 0) memoryDB.groups[idx] = updatedGroup;
-        else memoryDB.groups.push(updatedGroup);
-        scheduleSave();
+      if (updatedGroup && updatedGroup.id) {
+        if (supabase) {
+          try {
+            await supabase.from('deleted_group_ids').delete().eq('id', updatedGroup.id);
+          } catch (e) { }
+          await supabase.from('groups').upsert(groupToDb(updatedGroup));
+        } else {
+          if (Array.isArray(memoryDB.deletedGroupIds)) {
+            memoryDB.deletedGroupIds = memoryDB.deletedGroupIds.filter(id => id !== updatedGroup.id);
+          }
+          const idx = memoryDB.groups.findIndex(g => g.id === updatedGroup.id);
+          if (idx >= 0) memoryDB.groups[idx] = updatedGroup;
+          else memoryDB.groups.push(updatedGroup);
+          scheduleSave();
+        }
+        broadcastUpdate('group_updated');
       }
-      broadcastUpdate('group_updated');
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ success: true }));
     } catch (e) {

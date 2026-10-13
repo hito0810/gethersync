@@ -2051,6 +2051,7 @@
         CURRENT_USER: 'gathersync_current_user',
         FRIENDS: 'gathersync_friends',
         GROUPS: 'gathersync_groups',
+        DELETED_GROUPS: 'gathersync_deleted_groups',
         EVENTS: 'gathersync_events',
         DELETED_EVENTS: 'gathersync_deleted_events',
         NOTIFICATIONS: 'gathersync_notifications',
@@ -2217,12 +2218,12 @@
           }
         },
 
-        async deleteGroup(groupId) {
+        async deleteGroup(groupId, userId = '') {
           try {
             const res = await fetch(`${this.getBaseUrl()}/api/groups/delete`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ groupId })
+              body: JSON.stringify({ groupId, userId })
             });
             if (!res.ok) return null;
             return await res.json();
@@ -2342,8 +2343,10 @@
         pushAllToServer() {
           const user = this.getCurrentUser();
           const friends = this.getFriends();
-          const groups = this.getGroups();
-          const events = this.getEvents();
+          const deletedGroupIds = this.getDeletedGroupIds();
+          const groups = this.getGroups().filter(g => g && g.id && !deletedGroupIds.includes(g.id));
+          const deletedEventIds = this.getDeletedEventIds();
+          const events = this.getEvents().filter(e => e && e.id && !deletedEventIds.includes(e.id));
           ServerApi.syncPost({ user, friends, groups, events }).catch(() => { });
         },
 
@@ -2410,7 +2413,27 @@
         },
 
         // --- グループ管理 ---
-        getGroups() { return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.GROUPS) || '[]'); },
+        getDeletedGroupIds() {
+          try {
+            return JSON.parse(SafeStorage.getItem(STORAGE_KEYS.DELETED_GROUPS) || '[]');
+          } catch (e) { return []; }
+        },
+
+        addDeletedGroupId(groupId) {
+          if (!groupId) return;
+          const list = this.getDeletedGroupIds();
+          if (!list.includes(groupId)) {
+            list.push(groupId);
+            if (list.length > 300) list.shift();
+            SafeStorage.setItem(STORAGE_KEYS.DELETED_GROUPS, JSON.stringify(list));
+          }
+        },
+
+        getGroups() {
+          const raw = JSON.parse(SafeStorage.getItem(STORAGE_KEYS.GROUPS) || '[]');
+          const deletedIds = this.getDeletedGroupIds();
+          return raw.filter(g => g && g.id && !deletedIds.includes(g.id));
+        },
         getGroupById(id) { return this.getGroups().find(g => g.id === id); },
         saveGroups(g) { SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(g)); },
 
@@ -2420,8 +2443,13 @@
           const memberIds = Array.isArray(g.memberIds) ? [...g.memberIds] : [];
           if (!memberIds.includes(me.id)) memberIds.push(me.id);
 
+          const newGrpId = g.id || generateUniqueUserId('grp');
+          // 削除済みリストに入っていたら除外
+          const cleanDeleted = this.getDeletedGroupIds().filter(id => id !== newGrpId);
+          SafeStorage.setItem(STORAGE_KEYS.DELETED_GROUPS, JSON.stringify(cleanDeleted));
+
           const newGrp = {
-            id: g.id || generateUniqueUserId('grp'),
+            id: newGrpId,
             name: g.name,
             icon: g.icon || '👥',
             color: g.color || '#6366f1',
@@ -2430,7 +2458,7 @@
             createdById: me.id
           };
           groups.unshift(newGrp);
-          SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+          this.saveGroups(groups);
 
           ServerApi.updateGroup(newGrp).catch(() => { });
           return newGrp;
@@ -2444,15 +2472,17 @@
           } else {
             groups.unshift(updatedGroup);
           }
-          SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+          this.saveGroups(groups);
           ServerApi.updateGroup(updatedGroup).catch(() => { });
         },
 
         deleteGroup(groupId) {
+          this.addDeletedGroupId(groupId);
           let groups = this.getGroups();
           groups = groups.filter(g => g.id !== groupId);
-          SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
-          ServerApi.deleteGroup(groupId).catch(() => { });
+          this.saveGroups(groups);
+          const me = this.getCurrentUser();
+          ServerApi.deleteGroup(groupId, me.id).catch(() => { });
         },
 
         leaveGroup(groupId) {
@@ -2464,7 +2494,7 @@
             ServerApi.updateGroup(grp).catch(() => { });
           }
           groups = groups.filter(g => g.id !== groupId);
-          SafeStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+          this.saveGroups(groups);
         },
 
         // --- 予定（イベント）管理 ---
@@ -2642,17 +2672,21 @@
 
         mergeGroups(serverGroups) {
           if (!Array.isArray(serverGroups)) return;
-          const local = this.getGroups();
-          serverGroups.forEach(sg => {
-            if (!sg || !sg.id) return;
-            const idx = local.findIndex(lg => lg.id === sg.id);
-            if (idx >= 0) {
-              local[idx] = { ...local[idx], ...sg };
+          const deletedIds = this.getDeletedGroupIds();
+          const local = this.getGroups().filter(lg => lg && lg.id && !deletedIds.includes(lg.id));
+          const validServerGroups = serverGroups.filter(sg => sg && sg.id && !deletedIds.includes(sg.id));
+
+          // サーバーに存在する最新グループをマージ（サーバー上で削除されたグループは復活させない）
+          const merged = [];
+          validServerGroups.forEach(sg => {
+            const localItem = local.find(lg => lg.id === sg.id);
+            if (localItem) {
+              merged.push({ ...localItem, ...sg });
             } else {
-              local.unshift(sg);
+              merged.push(sg);
             }
           });
-          this.saveGroups(local);
+          this.saveGroups(merged);
         },
 
         mergeEvents(serverEvents) {
@@ -3094,6 +3128,9 @@
 
           // 🛡️ サーバーから受信したデータを同期
           let updated = false;
+          if (Array.isArray(data.deletedGroupIds)) {
+            data.deletedGroupIds.forEach(delId => StorageManager.addDeletedGroupId(delId));
+          }
           if (Array.isArray(data.deletedEventIds)) {
             data.deletedEventIds.forEach(delId => StorageManager.addDeletedEventId(delId));
           }

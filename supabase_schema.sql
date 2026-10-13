@@ -61,12 +61,19 @@ CREATE TABLE IF NOT EXISTS public.deleted_event_ids (
     deleted_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 6. 削除済みグループテーブル（復活防止用）
+CREATE TABLE IF NOT EXISTS public.deleted_group_ids (
+    id TEXT PRIMARY KEY,
+    deleted_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- テーブルの権限を公開APIアクセス可能に設定
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.deleted_event_ids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deleted_group_ids ENABLE ROW LEVEL SECURITY;
 
 -- 全アクセス許可ポリシー（サーバーサイドから安全に制御するため）
 DO $$
@@ -85,4 +92,7 @@ BEGIN
 
     DROP POLICY IF EXISTS "Allow all for server deleted_events" ON public.deleted_event_ids;
     CREATE POLICY "Allow all for server deleted_events" ON public.deleted_event_ids FOR ALL USING (true) WITH CHECK (true);
+
+    DROP POLICY IF EXISTS "Allow all for server deleted_groups" ON public.deleted_group_ids;
+    CREATE POLICY "Allow all for server deleted_groups" ON public.deleted_group_ids FOR ALL USING (true) WITH CHECK (true);
 END $$;
