@@ -2458,6 +2458,7 @@
           this.saveGroups(groups);
 
           ServerApi.updateGroup(newGrp).catch(() => { });
+          this.pushAllToServer();
           return newGrp;
         },
 
@@ -2574,7 +2575,8 @@
             location: e.location || '',
             startDateTime: e.startDateTime,
             endDateTime: e.endDateTime || '',
-            deadlineDateTime: e.deadlineDateTime,
+            deadline: e.deadlineDateTime || e.deadline || '',
+            deadlineDateTime: e.deadlineDateTime || e.deadline || '',
             scope: e.scope || (e.groupId ? 'group' : 'all'),
             targetFriendIds: Array.isArray(e.targetFriendIds) ? e.targetFriendIds : [],
             groupId: e.groupId || null,
@@ -2589,6 +2591,7 @@
           SafeStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
 
           ServerApi.saveEvent(newEv).catch(() => { });
+          this.pushAllToServer();
           return newEv;
         },
 
@@ -2670,10 +2673,12 @@
         mergeGroups(serverGroups) {
           if (!Array.isArray(serverGroups)) return;
           const deletedIds = this.getDeletedGroupIds();
+          const me = this.getCurrentUser();
           const local = this.getGroups().filter(lg => lg && lg.id && !deletedIds.includes(lg.id));
           const validServerGroups = serverGroups.filter(sg => sg && sg.id && !deletedIds.includes(sg.id));
+          const serverGroupMap = new Map(validServerGroups.map(sg => [sg.id, sg]));
 
-          // サーバーに存在する最新グループをマージ（サーバー上で削除されたグループは復活させない）
+          // サーバーに存在する最新グループをマージ
           const merged = [];
           validServerGroups.forEach(sg => {
             const localItem = local.find(lg => lg.id === sg.id);
@@ -2683,6 +2688,19 @@
               merged.push(sg);
             }
           });
+
+          // 🛡️ ローカルで作成・保持しているグループをサーバーから勝手に消されないよう保護
+          local.forEach(lg => {
+            if (!serverGroupMap.has(lg.id)) {
+              const isMine = lg.createdById === me.id || (Array.isArray(lg.memberIds) && lg.memberIds.includes(me.id));
+              if (isMine) {
+                merged.unshift(lg);
+                // サーバー未登録の可能性があるため同期を再送
+                ServerApi.updateGroup(lg).catch(() => { });
+              }
+            }
+          });
+
           this.saveGroups(merged);
         },
 
@@ -2699,6 +2717,9 @@
 
           // サーバーに存在する最新イベントをマージ
           validServerEvents.forEach(se => {
+            if (!se.deadlineDateTime && se.deadline) se.deadlineDateTime = se.deadline;
+            if (!se.deadline && se.deadlineDateTime) se.deadline = se.deadlineDateTime;
+
             const localItem = local.find(le => le.id === se.id);
             if (localItem) {
               // 自分が作成者の予定で新しい参加表明があったか通知
@@ -2733,12 +2754,14 @@
             }
           });
 
-          // ローカルで作成した有効な予定は消さずに保持し、サーバーへ同期
+          // 🛡️ ローカルで作成・参加している有効な予定は消さずに保持し、サーバーへ同期
           local.forEach(le => {
             if (!serverEventMap.has(le.id)) {
-              if (le.createdById === me.id) {
+              if (le.createdById === me.id || (Array.isArray(le.attendees) && le.attendees.some(a => a.friendId === me.id))) {
                 merged.unshift(le);
-                ServerApi.saveEvent(le).catch(() => { });
+                if (le.createdById === me.id) {
+                  ServerApi.saveEvent(le).catch(() => { });
+                }
               }
             }
           });

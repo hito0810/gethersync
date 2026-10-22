@@ -32,7 +32,7 @@ function eventToDb(e) {
     category: e.category || 'other',
     start_date_time: e.startDateTime || '',
     end_date_time: e.endDateTime || '',
-    deadline: e.deadline || '',
+    deadline: e.deadline || e.deadlineDateTime || '',
     location: e.location || '',
     description: e.description || '',
     scope: e.scope || 'all',
@@ -52,6 +52,7 @@ function dbToEvent(row) {
     startDateTime: row.start_date_time,
     endDateTime: row.end_date_time,
     deadline: row.deadline,
+    deadlineDateTime: row.deadline,
     location: row.location,
     description: row.description,
     scope: row.scope,
@@ -67,6 +68,8 @@ function groupToDb(g) {
     id: g.id,
     name: g.name,
     icon: g.icon || '👥',
+    color: g.color || '#6366f1',
+    description: g.description || '',
     created_by_id: g.createdById || null,
     member_ids: g.memberIds || [],
     updated_at: new Date().toISOString()
@@ -78,6 +81,8 @@ function dbToGroup(row) {
     id: row.id,
     name: row.name,
     icon: row.icon,
+    color: row.color || '#6366f1',
+    description: row.description || '',
     createdById: row.created_by_id,
     memberIds: row.member_ids || []
   };

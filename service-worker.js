@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gathersync-v13';
+const CACHE_NAME = 'gathersync-v14';
 const ASSETS = [
   './',
   './index.html',
